@@ -8,15 +8,16 @@ import {
   Animated,
   Dimensions,
   StyleSheet,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
-import { GlassContainer } from "../../components/Glass/GlassContainer";
-import { Input } from "../../components/Input";
-import { Button } from "../../components/Button";
+import { GlassContainer, WeatherGlassBackground } from "../../components/Glass";
+import { GlassInput } from "../../components/Glass/GlassInput";
+import { GlassButton } from "../../components/Glass/GlassButton";
 import { ErrorMessage } from "../../components/ErrorMessage";
-import { colors } from "../../theme/colors";
-import { spacing } from "../../theme/spacing";
-import { typography } from "../../theme/typography";
+import { useTheme, useThemedStyles, spacing, typography } from "../../theme";
 import type { AuthScreenProps } from "../../navigation/types";
 
 const { width, height } = Dimensions.get("window");
@@ -25,78 +26,81 @@ type LoginScreenProps = AuthScreenProps<"Login">;
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const { signIn, loading } = useAuth();
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [authError, setAuthError] = useState("");
 
-  // Animated background
-  const backgroundAnim = useRef(new Animated.Value(0)).current;
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
 
   useEffect(() => {
-    // Animate background gradient
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(backgroundAnim, {
-          toValue: 1,
-          duration: 8000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(backgroundAnim, {
-          toValue: 0,
-          duration: 8000,
-          useNativeDriver: false,
-        }),
-      ]),
-    ).start();
-  }, [backgroundAnim]);
-
-  const backgroundColor = backgroundAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [colors.gradient.primary[0], colors.gradient.secondary[0]],
-  });
+    // Animate screen entrance
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 20,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim()) {
-      setEmailError("Email is required");
-      return false;
-    }
-    if (!emailRegex.test(email)) {
-      setEmailError("Please enter a valid email address");
-      return false;
-    }
-    setEmailError("");
-    return true;
+    return emailRegex.test(email);
   };
 
-  const validatePassword = (password: string): boolean => {
-    if (!password.trim()) {
-      setPasswordError("Password is required");
-      return false;
-    }
-    if (password.length < 6) {
-      setPasswordError("Password must be at least 6 characters");
-      return false;
-    }
+  const validateForm = (): boolean => {
+    let isValid = true;
+
+    // Reset errors
+    setEmailError("");
     setPasswordError("");
-    return true;
+    setAuthError("");
+
+    // Validate email
+    if (!email) {
+      setEmailError("Email is required");
+      isValid = false;
+    } else if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      isValid = false;
+    }
+
+    // Validate password
+    if (!password) {
+      setPasswordError("Password is required");
+      isValid = false;
+    } else if (password.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      isValid = false;
+    }
+
+    return isValid;
   };
 
   const handleLogin = async () => {
-    const isEmailValid = validateEmail(email);
-    const isPasswordValid = validatePassword(password);
+    if (!validateForm()) return;
 
-    if (!isEmailValid || !isPasswordValid) {
-      return;
-    }
-
-    setAuthError("");
-    const result = await signIn(email.trim(), password);
-
-    if (result.error) {
-      setAuthError(result.error.message);
+    try {
+      const result = await signIn(email, password);
+      if (result?.error) {
+        setAuthError(result.error.message || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setAuthError("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -106,153 +110,206 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const handleRetry = () => {
     setAuthError("");
+    setEmailError("");
+    setPasswordError("");
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    <WeatherGlassBackground
+      weatherCondition="clear"
+      timeOfDay={isDark ? "night" : "morning"}
+      enableGlassOverlay={true}
     >
-      <Animated.View style={[styles.background, { backgroundColor }]}>
-        <View style={styles.overlay} />
-      </Animated.View>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to your account</Text>
-          </View>
-
-          <GlassContainer
-            blurIntensity={20}
-            borderRadius={spacing.radius.xl}
-            style={styles.formContainer}
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <Input
-              label="Email"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (emailError) setEmailError("");
-              }}
-              placeholder="Enter your email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={emailError}
-            />
+            {/* Header */}
+            <Animated.View
+              style={[
+                styles.header,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
+            >
+              <Text style={styles.title}>Welcome Back</Text>
+              <Text style={styles.subtitle}>
+                Sign in to access your weather dashboard
+              </Text>
+            </Animated.View>
 
-            <Input
-              label="Password"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                if (passwordError) setPasswordError("");
-              }}
-              placeholder="Enter your password"
-              secureTextEntry
-              error={passwordError}
-            />
+            {/* Login Form */}
+            <Animated.View
+              style={[
+                styles.formContainer,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
+            >
+              <GlassContainer
+                material="regular"
+                borderRadius={spacing.radius.xl}
+                padding="xl"
+                style={styles.formCard}
+              >
+                <GlassInput
+                  label="Email Address"
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (emailError) setEmailError("");
+                    if (authError) setAuthError("");
+                  }}
+                  placeholder="Enter your email"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  error={!!emailError}
+                  style={styles.input}
+                />
+                {emailError && (
+                  <Text style={styles.errorText}>{emailError}</Text>
+                )}
 
-            {authError && (
-              <ErrorMessage
-                message={authError}
-                onRetry={handleRetry}
-                showRetry={false}
-                style={styles.errorMessage}
-              />
-            )}
+                <GlassInput
+                  label="Password"
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (passwordError) setPasswordError("");
+                    if (authError) setAuthError("");
+                  }}
+                  placeholder="Enter your password"
+                  secureTextEntry
+                  error={!!passwordError}
+                  style={styles.input}
+                />
+                {passwordError && (
+                  <Text style={styles.errorText}>{passwordError}</Text>
+                )}
 
-            <Button
-              title="Sign In"
-              onPress={handleLogin}
-              loading={loading}
-              style={styles.loginButton}
-            />
-          </GlassContainer>
+                {authError && (
+                  <ErrorMessage
+                    message={authError}
+                    onRetry={handleRetry}
+                    showRetry={false}
+                    style={styles.errorMessage}
+                  />
+                )}
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <Text style={styles.signupLink} onPress={handleSignupLink}>
-              Sign up
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+                <GlassButton
+                  title="Sign In"
+                  onPress={handleLogin}
+                  loading={loading}
+                  disabled={loading}
+                  variant="primary"
+                  size="large"
+                  style={styles.loginButton}
+                />
+              </GlassContainer>
+            </Animated.View>
+
+            {/* Footer */}
+            <Animated.View
+              style={[
+                styles.footer,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
+            >
+              <Text style={styles.footerText}>Don't have an account?</Text>
+              <TouchableOpacity onPress={handleSignupLink}>
+                <Text style={styles.signupLink}>Sign Up</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </WeatherGlassBackground>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  background: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: spacing.xl,
-  },
-  title: {
-    fontSize: typography.size["4xl"],
-    fontWeight: typography.weight.bold,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.normal,
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  formContainer: {
-    padding: spacing.xl,
-    marginBottom: spacing.lg,
-  },
-  errorMessage: {
-    marginBottom: spacing.md,
-  },
-  loginButton: {
-    marginTop: spacing.md,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: typography.size.base,
-    color: colors.text.secondary,
-  },
-  signupLink: {
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.medium,
-    color: colors.accent.primary,
-    textDecorationLine: "underline",
-  },
-});
+const createStyles = (colors: any, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    keyboardAvoidingView: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: "center",
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.xl,
+    },
+    header: {
+      alignItems: "center",
+      marginBottom: spacing["2xl"],
+    },
+    title: {
+      fontSize: typography.size["3xl"],
+      fontWeight: typography.weight.bold,
+      color: colors.text.primary,
+      marginBottom: spacing.md,
+      textAlign: "center",
+    },
+    subtitle: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.normal,
+      color: colors.text.secondary,
+      textAlign: "center",
+      lineHeight: 24,
+    },
+    formContainer: {
+      marginBottom: spacing.xl,
+    },
+    formCard: {
+      minHeight: 280,
+    },
+    input: {
+      marginBottom: spacing.md,
+    },
+    errorText: {
+      fontSize: typography.size.sm,
+      color: colors.accent.error,
+      marginBottom: spacing.sm,
+      marginTop: -spacing.sm,
+      paddingLeft: spacing.sm,
+    },
+    errorMessage: {
+      marginBottom: spacing.lg,
+    },
+    loginButton: {
+      marginTop: spacing.md,
+    },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: spacing.lg,
+    },
+    footerText: {
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.normal,
+      color: colors.text.secondary,
+      marginRight: spacing.xs,
+    },
+    signupLink: {
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.semibold,
+      color: colors.brand.primary,
+    },
+  });

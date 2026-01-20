@@ -139,16 +139,16 @@ export const GlassBackground: React.FC<GlassBackgroundProps> = ({
 
   // Get weather-based gradient
   const getWeatherGradient = useMemo(() => {
-    if (!weatherCondition) return colors.gradient.primary;
+    if (!weatherCondition) return colors.gradients.primary;
 
     const weatherGradients = {
-      sunny: colors.gradient.clearSky,
-      cloudy: colors.gradient.cloudy,
-      rainy: colors.gradient.storm,
-      snowy: colors.gradient.cloudy,
-      stormy: colors.gradient.storm,
-      clear: colors.gradient.clearSky,
-      overcast: colors.gradient.cloudy,
+      sunny: colors.gradients.sunset,
+      cloudy: colors.gradients.ocean,
+      rainy: colors.gradients.ocean,
+      snowy: colors.gradients.ice,
+      stormy: colors.gradients.cosmic,
+      clear: colors.gradients.aurora,
+      overcast: colors.gradients.forest,
     };
 
     const timeGradients = {
@@ -183,7 +183,7 @@ export const GlassBackground: React.FC<GlassBackgroundProps> = ({
       return timeGradients[timeOfDay];
     }
 
-    return weatherGradients[weatherCondition] || colors.gradient.primary;
+    return weatherGradients[weatherCondition] || colors.gradients.primary;
   }, [weatherCondition, timeOfDay]);
 
   // Get gradient direction points
@@ -382,7 +382,7 @@ export const GlassBackground: React.FC<GlassBackgroundProps> = ({
           <View
             style={[
               backgroundStyle,
-              { backgroundColor: colors.gradient.primary[0] },
+              { backgroundColor: colors.gradients.primary[0] },
             ]}
           />
         );
@@ -392,7 +392,7 @@ export const GlassBackground: React.FC<GlassBackgroundProps> = ({
           <View
             style={[
               backgroundStyle,
-              { backgroundColor: backgroundColor || colors.base.black },
+              { backgroundColor: backgroundColor || colors.background.primary },
             ]}
           />
         );

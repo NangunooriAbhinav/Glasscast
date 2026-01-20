@@ -21,9 +21,7 @@ import {
 } from "../../components/Glass";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { useFavorites } from "../../hooks/useFavorites";
-import { colors } from "../../theme/colors";
-import { spacing } from "../../theme/spacing";
-import { typography } from "../../theme/typography";
+import { useTheme, useThemedStyles, spacing, typography } from "../../theme";
 import type { MainTabScreenProps } from "../../navigation/types";
 import type { City } from "../../types/weather";
 import type { FavoriteCity } from "../../types/database";
@@ -53,6 +51,7 @@ const LocationItem: React.FC<LocationItemProps> = ({
   showFavoriteButton = false,
   isCurrentLocation = false,
 }) => {
+  const styles = useThemedStyles(createStyles);
   return (
     <InteractiveGlassCard
       material="medium"
@@ -247,6 +246,8 @@ const majorIndianCities: City[] = [
 ];
 
 export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentLocation, setCurrentLocation] = useState<{
     name: string;
@@ -612,225 +613,227 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.glass.secondary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backButtonText: {
-    fontSize: 18,
-    fontWeight: typography.weight.medium,
-    color: colors.text.primary,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-    textAlign: "center",
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  searchContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-    position: "relative",
-    zIndex: 1000,
-  },
-  searchIcon: {
-    fontSize: 16,
-    opacity: 0.7,
-  },
-  clearIcon: {
-    fontSize: 16,
-    color: colors.text.secondary,
-  },
-  dropdownContainer: {
-    position: "absolute",
-    top: "100%",
-    left: spacing.lg,
-    right: spacing.lg,
-    zIndex: 1001,
-  },
-  dropdown: {
-    maxHeight: 200,
-    marginTop: spacing.xs,
-  },
-  dropdownItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.glass.tertiary,
-  },
-  dropdownItemContent: {
-    flex: 1,
-  },
-  dropdownItemTitle: {
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-  },
-  dropdownItemSubtitle: {
-    fontSize: typography.size.sm,
-    color: colors.text.secondary,
-  },
-  dropdownFavoriteButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.glass.tertiary,
-  },
-  dropdownFavoriteButtonActive: {
-    backgroundColor: colors.accent.error,
-  },
-  dropdownFavoriteIcon: {
-    fontSize: 16,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: spacing.lg,
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-    marginBottom: spacing.md,
-    paddingLeft: spacing.sm,
-  },
-  locationCard: {
-    marginBottom: spacing.sm,
-  },
-  locationContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  locationIconContainer: {
-    position: "relative",
-    marginRight: spacing.md,
-  },
-  locationIcon: {
-    fontSize: 24,
-  },
-  currentLocationDot: {
-    position: "absolute",
-    bottom: -2,
-    right: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.accent.success,
-  },
-  locationInfo: {
-    flex: 1,
-  },
-  locationTitle: {
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-  },
-  locationSubtitle: {
-    fontSize: typography.size.sm,
-    color: colors.text.secondary,
-  },
-  favoriteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.glass.tertiary,
-  },
-  favoriteButtonActive: {
-    backgroundColor: colors.accent.error,
-  },
-  favoriteIconText: {
-    fontSize: 16,
-  },
-  favoriteIconActive: {
-    color: colors.text.primary,
-  },
-  loadingCard: {
-    alignItems: "center",
-    paddingVertical: spacing.lg,
-  },
-  refreshLocationButton: {
-    marginBottom: spacing.sm,
-  },
-  refreshCard: {
-    alignItems: "center",
-    paddingVertical: spacing.lg,
-  },
-  refreshIcon: {
-    fontSize: 32,
-    marginBottom: spacing.sm,
-  },
-  refreshText: {
-    fontSize: typography.size.base,
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  emptyCard: {
-    alignItems: "center",
-    paddingVertical: spacing.xl,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: spacing.md,
-  },
-  emptyTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
-    textAlign: "center",
-  },
-  emptySubtitle: {
-    fontSize: typography.size.base,
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  favoriteItemContainer: {
-    position: "relative",
-  },
-  removeFavoriteButton: {
-    position: "absolute",
-    top: spacing.sm,
-    right: spacing.sm,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.glass.tertiary,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-  },
-  removeFavoriteIcon: {
-    fontSize: 12,
-    color: colors.text.secondary,
-  },
-});
+const createStyles = (colors: any, isDark: boolean) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 24,
+      paddingVertical: 16,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.glass.secondary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    backButtonText: {
+      fontSize: 18,
+      fontWeight: typography.weight.medium,
+      color: colors.text.primary,
+    },
+    headerTitle: {
+      flex: 1,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.semibold,
+      color: colors.text.primary,
+      textAlign: "center",
+    },
+    headerSpacer: {
+      width: 40,
+    },
+    searchContainer: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.md,
+      position: "relative",
+      zIndex: 1000,
+    },
+    searchIcon: {
+      fontSize: 16,
+      opacity: 0.7,
+      color: colors.text.secondary,
+    },
+    clearIcon: {
+      fontSize: 16,
+      color: colors.text.secondary,
+    },
+    dropdownContainer: {
+      position: "absolute",
+      top: "100%",
+      left: spacing.lg,
+      right: spacing.lg,
+      zIndex: 1001,
+    },
+    dropdown: {
+      maxHeight: 200,
+      marginTop: spacing.xs,
+    },
+    dropdownItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.border.glass,
+    },
+    dropdownItemContent: {
+      flex: 1,
+    },
+    dropdownItemTitle: {
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.semibold,
+      color: colors.text.primary,
+    },
+    dropdownItemSubtitle: {
+      fontSize: typography.size.sm,
+      color: colors.text.secondary,
+    },
+    dropdownFavoriteButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.glass.tertiary,
+    },
+    dropdownFavoriteButtonActive: {
+      backgroundColor: colors.accent.error,
+    },
+    dropdownFavoriteIcon: {
+      fontSize: 16,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingHorizontal: spacing.lg,
+    },
+    section: {
+      marginBottom: spacing.xl,
+    },
+    sectionTitle: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.semibold,
+      color: colors.text.primary,
+      marginBottom: spacing.md,
+      paddingLeft: spacing.sm,
+    },
+    locationCard: {
+      marginBottom: spacing.sm,
+    },
+    locationContent: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    locationIconContainer: {
+      position: "relative",
+      marginRight: spacing.md,
+    },
+    locationIcon: {
+      fontSize: 24,
+    },
+    currentLocationDot: {
+      position: "absolute",
+      bottom: -2,
+      right: -2,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.accent.success,
+    },
+    locationInfo: {
+      flex: 1,
+    },
+    locationTitle: {
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.semibold,
+      color: colors.text.primary,
+      marginBottom: spacing.xs,
+    },
+    locationSubtitle: {
+      fontSize: typography.size.sm,
+      color: colors.text.secondary,
+    },
+    favoriteButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.glass.tertiary,
+    },
+    favoriteButtonActive: {
+      backgroundColor: colors.accent.error,
+    },
+    favoriteIconText: {
+      fontSize: 16,
+    },
+    favoriteIconActive: {
+      color: colors.text.primary,
+    },
+    loadingCard: {
+      alignItems: "center",
+      paddingVertical: spacing.lg,
+    },
+    refreshLocationButton: {
+      marginBottom: spacing.sm,
+    },
+    refreshCard: {
+      alignItems: "center",
+      paddingVertical: spacing.lg,
+    },
+    refreshIcon: {
+      fontSize: 32,
+      marginBottom: spacing.sm,
+    },
+    refreshText: {
+      fontSize: typography.size.base,
+      color: colors.text.secondary,
+      textAlign: "center",
+    },
+    emptyCard: {
+      alignItems: "center",
+      paddingVertical: spacing.xl,
+    },
+    emptyIcon: {
+      fontSize: 48,
+      marginBottom: spacing.md,
+    },
+    emptyTitle: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.semibold,
+      color: colors.text.primary,
+      marginBottom: spacing.sm,
+      textAlign: "center",
+    },
+    emptySubtitle: {
+      fontSize: typography.size.base,
+      color: colors.text.secondary,
+      textAlign: "center",
+    },
+    favoriteItemContainer: {
+      position: "relative",
+    },
+    removeFavoriteButton: {
+      position: "absolute",
+      top: spacing.sm,
+      right: spacing.sm,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: colors.glass.tertiary,
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1,
+    },
+    removeFavoriteIcon: {
+      fontSize: 12,
+      color: colors.text.secondary,
+    },
+  });

@@ -1,597 +1,479 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
-  StatusBar,
-  Animated,
   Switch,
+  TouchableOpacity,
   Alert,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 import {
-  WeatherGlassBackground,
-  InteractiveGlassCard,
-  FloatingGlassCard,
   GlassContainer,
-  GlassButton,
-  WeatherActionButton,
+  InteractiveGlassCard,
+  WeatherGlassBackground,
 } from "../../components/Glass";
-import {
-  colors,
-  spacing,
-  typography,
-  glassEffects,
-  animations,
-} from "../../theme";
-import { MainTabScreenProps } from "../../navigation/types";
+import { useTheme, useThemedStyles, spacing, typography } from "../../theme";
+import { useAuth } from "../../context/AuthContext";
+import type { MainTabScreenProps } from "../../navigation/types";
 
 type SettingsScreenProps = MainTabScreenProps<"Settings">;
 
-interface SettingItem {
-  id: string;
+interface SettingsSectionProps {
+  title: string;
+  children: React.ReactNode;
+}
+
+const SettingsSection: React.FC<SettingsSectionProps> = ({
+  title,
+  children,
+}) => {
+  const styles = useThemedStyles(createStyles);
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <GlassContainer
+        material="regular"
+        borderRadius={spacing.radius.xl}
+        style={styles.sectionContainer}
+      >
+        {children}
+      </GlassContainer>
+    </View>
+  );
+};
+
+interface SettingsItemProps {
+  icon: string;
   title: string;
   subtitle?: string;
-  type: "toggle" | "button" | "info" | "navigation";
-  value?: boolean;
+  value?: string;
+  showSwitch?: boolean;
+  switchValue?: boolean;
+  onSwitchChange?: (value: boolean) => void;
   onPress?: () => void;
-  onToggle?: (value: boolean) => void;
-  icon?: string;
+  showChevron?: boolean;
+  isLast?: boolean;
   destructive?: boolean;
 }
 
-interface SettingSection {
-  id: string;
-  title: string;
-  items: SettingItem[];
-}
+const SettingsItem: React.FC<SettingsItemProps> = ({
+  icon,
+  title,
+  subtitle,
+  value,
+  showSwitch = false,
+  switchValue = false,
+  onSwitchChange,
+  onPress,
+  showChevron = false,
+  isLast = false,
+  destructive = false,
+}) => {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
+  const handlePress = () => {
+    if (onPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onPress();
+    }
+  };
+
+  const handleSwitchChange = (newValue: boolean) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onSwitchChange?.(newValue);
+  };
+
+  return (
+    <TouchableOpacity
+      style={[styles.settingsItem, isLast && styles.settingsItemLast]}
+      onPress={handlePress}
+      disabled={!onPress && !showSwitch}
+      activeOpacity={0.7}
+    >
+      <View style={styles.settingsItemLeft}>
+        <Text style={styles.settingsItemIcon}>{icon}</Text>
+        <View style={styles.settingsItemContent}>
+          <Text
+            style={[
+              styles.settingsItemTitle,
+              destructive && { color: colors.accent.error },
+            ]}
+          >
+            {title}
+          </Text>
+          {subtitle && (
+            <Text style={styles.settingsItemSubtitle}>{subtitle}</Text>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.settingsItemRight}>
+        {value && <Text style={styles.settingsItemValue}>{value}</Text>}
+        {showSwitch && (
+          <Switch
+            value={switchValue}
+            onValueChange={handleSwitchChange}
+            trackColor={{
+              false: colors.glass.tertiary,
+              true: colors.brand.primary,
+            }}
+            thumbColor={switchValue ? colors.white : colors.glass.primary}
+            ios_backgroundColor={colors.glass.tertiary}
+          />
+        )}
+        {showChevron && <Text style={styles.settingsItemChevron}>›</Text>}
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   navigation,
 }) => {
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [slideAnim] = useState(new Animated.Value(50));
-  const [settings, setSettings] = useState({
-    notifications: true,
-    locationServices: true,
-    darkMode: false,
-    celsius: false,
-    autoRefresh: true,
-    soundEffects: true,
-    hapticFeedback: true,
-    backgroundRefresh: true,
-  });
+  const {
+    colors,
+    isDark,
+    toggleTheme,
+    isSystemTheme,
+    setSystemTheme,
+    colorScheme,
+  } = useTheme();
+  const { user, signOut } = useAuth();
+  const styles = useThemedStyles(createStyles);
 
-  useEffect(() => {
-    // Animate screen entrance
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 20,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [locationEnabled, setLocationEnabled] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const updateSetting = (key: keyof typeof settings, value: boolean) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+  const handleSignOut = () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (error) {
+              Alert.alert("Error", "Failed to sign out. Please try again.");
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
   };
 
   const handleAbout = () => {
     Alert.alert(
       "About Glasscast",
-      "Glasscast v1.0.0\n\nA beautiful weather app with glassmorphism design.\n\nBuilt with React Native & Expo",
-      [{ text: "OK", style: "default" }],
+      "Version 1.0.0\n\nA beautiful weather app with glassmorphism design.\n\nBuilt with React Native & Expo.",
+      [{ text: "OK" }],
+      { cancelable: true },
     );
   };
 
-  const handlePrivacyPolicy = () => {
-    Alert.alert(
-      "Privacy Policy",
-      "Privacy policy content would be shown here.",
-    );
+  const handlePrivacy = () => {
+    Linking.openURL("https://your-privacy-policy-url.com");
   };
 
-  const handleTermsOfService = () => {
-    Alert.alert(
-      "Terms of Service",
-      "Terms of service content would be shown here.",
-    );
+  const handleSupport = () => {
+    Linking.openURL("mailto:support@glasscast.com");
   };
 
-  const handleResetApp = () => {
-    Alert.alert(
-      "Reset App",
-      "Are you sure you want to reset all settings? This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reset",
-          style: "destructive",
-          onPress: () => {
-            setSettings({
-              notifications: true,
-              locationServices: true,
-              darkMode: false,
-              celsius: false,
-              autoRefresh: true,
-              soundEffects: true,
-              hapticFeedback: true,
-              backgroundRefresh: true,
-            });
-          },
-        },
-      ],
-    );
+  const handleRateApp = () => {
+    // Replace with your app store URL
+    Linking.openURL("https://apps.apple.com/app/your-app-id");
   };
 
-  const settingSections: SettingSection[] = [
-    {
-      id: "general",
-      title: "General",
-      items: [
-        {
-          id: "notifications",
-          title: "Notifications",
-          subtitle: "Receive weather alerts and updates",
-          type: "toggle",
-          value: settings.notifications,
-          onToggle: (value) => updateSetting("notifications", value),
-          icon: "🔔",
-        },
-        {
-          id: "locationServices",
-          title: "Location Services",
-          subtitle: "Allow access to current location",
-          type: "toggle",
-          value: settings.locationServices,
-          onToggle: (value) => updateSetting("locationServices", value),
-          icon: "📍",
-        },
-        {
-          id: "autoRefresh",
-          title: "Auto Refresh",
-          subtitle: "Automatically update weather data",
-          type: "toggle",
-          value: settings.autoRefresh,
-          onToggle: (value) => updateSetting("autoRefresh", value),
-          icon: "🔄",
-        },
-      ],
-    },
-    {
-      id: "display",
-      title: "Display & Units",
-      items: [
-        {
-          id: "darkMode",
-          title: "Dark Mode",
-          subtitle: "Use dark theme throughout the app",
-          type: "toggle",
-          value: settings.darkMode,
-          onToggle: (value) => updateSetting("darkMode", value),
-          icon: "🌙",
-        },
-        {
-          id: "celsius",
-          title: "Celsius",
-          subtitle: "Show temperature in Celsius",
-          type: "toggle",
-          value: settings.celsius,
-          onToggle: (value) => updateSetting("celsius", value),
-          icon: "🌡️",
-        },
-      ],
-    },
-    {
-      id: "experience",
-      title: "Experience",
-      items: [
-        {
-          id: "soundEffects",
-          title: "Sound Effects",
-          subtitle: "Play sounds for interactions",
-          type: "toggle",
-          value: settings.soundEffects,
-          onToggle: (value) => updateSetting("soundEffects", value),
-          icon: "🔊",
-        },
-        {
-          id: "hapticFeedback",
-          title: "Haptic Feedback",
-          subtitle: "Feel vibrations for interactions",
-          type: "toggle",
-          value: settings.hapticFeedback,
-          onToggle: (value) => updateSetting("hapticFeedback", value),
-          icon: "📳",
-        },
-        {
-          id: "backgroundRefresh",
-          title: "Background Refresh",
-          subtitle: "Update weather when app is closed",
-          type: "toggle",
-          value: settings.backgroundRefresh,
-          onToggle: (value) => updateSetting("backgroundRefresh", value),
-          icon: "⚡",
-        },
-      ],
-    },
-    {
-      id: "support",
-      title: "Support & Information",
-      items: [
-        {
-          id: "about",
-          title: "About Glasscast",
-          subtitle: "Version and app information",
-          type: "button",
-          onPress: handleAbout,
-          icon: "ℹ️",
-        },
-        {
-          id: "privacy",
-          title: "Privacy Policy",
-          subtitle: "How we protect your data",
-          type: "button",
-          onPress: handlePrivacyPolicy,
-          icon: "🔒",
-        },
-        {
-          id: "terms",
-          title: "Terms of Service",
-          subtitle: "Terms and conditions",
-          type: "button",
-          onPress: handleTermsOfService,
-          icon: "📋",
-        },
-      ],
-    },
-    {
-      id: "danger",
-      title: "Danger Zone",
-      items: [
-        {
-          id: "reset",
-          title: "Reset App",
-          subtitle: "Reset all settings to default",
-          type: "button",
-          onPress: handleResetApp,
-          icon: "⚠️",
-          destructive: true,
-        },
-      ],
-    },
-  ];
-
-  const renderSettingItem = (item: SettingItem) => {
-    return (
-      <InteractiveGlassCard
-        key={item.id}
-        material={item.destructive ? "light" : "regular"}
-        elevation="medium"
-        enableHover={true}
-        enablePress={true}
-        pressable={item.type === "button"}
-        onPress={item.onPress}
-        scaleOnPress={0.98}
-        borderRadius="xl"
-        padding="lg"
-        style={[styles.settingItem, item.destructive && styles.destructiveItem]}
-      >
-        <View style={styles.settingContent}>
-          <View style={styles.settingLeft}>
-            {item.icon && (
-              <View style={styles.settingIconContainer}>
-                <Text style={styles.settingIcon}>{item.icon}</Text>
-              </View>
-            )}
-            <View style={styles.settingInfo}>
-              <Text
-                style={[
-                  styles.settingTitle,
-                  item.destructive && styles.destructiveText,
-                ]}
-              >
-                {item.title}
-              </Text>
-              {item.subtitle && (
-                <Text style={styles.settingSubtitle}>{item.subtitle}</Text>
-              )}
-            </View>
-          </View>
-          <View style={styles.settingRight}>
-            {item.type === "toggle" && (
-              <Switch
-                value={item.value}
-                onValueChange={item.onToggle}
-                trackColor={{
-                  false: colors.glass.secondary,
-                  true: colors.accent.primaryAlpha,
-                }}
-                thumbColor={
-                  item.value ? colors.accent.primary : colors.text.muted
-                }
-                ios_backgroundColor={colors.glass.secondary}
-              />
-            )}
-            {item.type === "button" && <Text style={styles.chevron}>›</Text>}
-          </View>
-        </View>
-      </InteractiveGlassCard>
-    );
+  const getThemeDisplayName = () => {
+    if (isSystemTheme) return "System";
+    return colorScheme === "dark" ? "Dark" : "Light";
   };
-
-  const renderSection = (section: SettingSection) => (
-    <Animated.View
-      key={section.id}
-      style={[
-        styles.sectionContainer,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        },
-      ]}
-    >
-      <Text style={styles.sectionTitle}>{section.title}</Text>
-      <GlassContainer
-        material="light"
-        borderRadius="2xl"
-        padding="sm"
-        enableReflection={true}
-        shadowType="medium"
-      >
-        {section.items.map((item, index) => (
-          <View key={item.id}>
-            {renderSettingItem(item)}
-            {index < section.items.length - 1 && (
-              <View style={styles.separator} />
-            )}
-          </View>
-        ))}
-      </GlassContainer>
-    </Animated.View>
-  );
-
-  const renderUserProfile = () => (
-    <Animated.View
-      style={[
-        styles.profileContainer,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        },
-      ]}
-    >
-      <FloatingGlassCard
-        material="frosted"
-        elevation="high"
-        enableGlow={true}
-        glowColor={colors.accent.primary}
-        enableReflection={true}
-        borderRadius="3xl"
-        padding="xl"
-        style={styles.profileCard}
-      >
-        <View style={styles.profileContent}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>👤</Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Weather Enthusiast</Text>
-            <Text style={styles.profileEmail}>user@glasscast.app</Text>
-          </View>
-          <WeatherActionButton
-            title="Edit"
-            size="small"
-            variant="secondary"
-            onPress={() => {}}
-          />
-        </View>
-      </FloatingGlassCard>
-    </Animated.View>
-  );
 
   return (
     <WeatherGlassBackground
-      type="gradient"
-      gradientColors={colors.gradient.accent}
+      weatherCondition="clear"
+      timeOfDay={isDark ? "night" : "morning"}
       enableGlassOverlay={true}
-      enableAmbientLight={true}
-      enableVignette={true}
-      vignetteIntensity={0.1}
     >
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
-      />
-
       <SafeAreaView style={styles.container}>
         {/* Header */}
-        <Animated.View
-          style={[
-            styles.header,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          <GlassButton
-            title=""
-            icon={<Text style={styles.backIcon}>←</Text>}
-            variant="ghost"
-            size="medium"
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          />
+        <View style={styles.header}>
           <Text style={styles.headerTitle}>Settings</Text>
-          <View style={styles.headerSpacer} />
-        </Animated.View>
+        </View>
 
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
         >
-          {renderUserProfile()}
+          {/* Profile Section */}
+          {user && (
+            <SettingsSection title="Profile">
+              <SettingsItem
+                icon="👤"
+                title={user.email || "User"}
+                subtitle="Signed in"
+                showChevron={false}
+                isLast={true}
+              />
+            </SettingsSection>
+          )}
 
-          {settingSections.map(renderSection)}
+          {/* Appearance Section */}
+          <SettingsSection title="Appearance">
+            <SettingsItem
+              icon="🌓"
+              title="Theme"
+              subtitle="Choose your preferred theme"
+              value={getThemeDisplayName()}
+              onPress={() => {
+                Alert.alert(
+                  "Theme Settings",
+                  "Choose your preferred theme",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "System",
+                      onPress: () => setSystemTheme(true),
+                    },
+                    {
+                      text: "Light",
+                      onPress: () => {
+                        setSystemTheme(false);
+                        if (isDark) toggleTheme();
+                      },
+                    },
+                    {
+                      text: "Dark",
+                      onPress: () => {
+                        setSystemTheme(false);
+                        if (!isDark) toggleTheme();
+                      },
+                    },
+                  ],
+                  { cancelable: true },
+                );
+              }}
+              showChevron={true}
+              isLast={true}
+            />
+          </SettingsSection>
+
+          {/* Weather Section */}
+          <SettingsSection title="Weather">
+            <SettingsItem
+              icon="📍"
+              title="Location Services"
+              subtitle="Allow location access for current weather"
+              showSwitch={true}
+              switchValue={locationEnabled}
+              onSwitchChange={setLocationEnabled}
+            />
+            <SettingsItem
+              icon="🔄"
+              title="Auto Refresh"
+              subtitle="Automatically update weather data"
+              showSwitch={true}
+              switchValue={autoRefresh}
+              onSwitchChange={setAutoRefresh}
+            />
+            <SettingsItem
+              icon="🌡️"
+              title="Temperature Unit"
+              subtitle="Choose temperature display unit"
+              value="Celsius"
+              onPress={() => {
+                Alert.alert(
+                  "Temperature Unit",
+                  "Choose your preferred temperature unit",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Celsius (°C)" },
+                    { text: "Fahrenheit (°F)" },
+                  ],
+                  { cancelable: true },
+                );
+              }}
+              showChevron={true}
+              isLast={true}
+            />
+          </SettingsSection>
+
+          {/* Notifications Section */}
+          <SettingsSection title="Notifications">
+            <SettingsItem
+              icon="🔔"
+              title="Push Notifications"
+              subtitle="Receive weather alerts and updates"
+              showSwitch={true}
+              switchValue={notificationsEnabled}
+              onSwitchChange={setNotificationsEnabled}
+            />
+            <SettingsItem
+              icon="⚠️"
+              title="Weather Alerts"
+              subtitle="Get notified about severe weather"
+              showSwitch={true}
+              switchValue={true}
+              onSwitchChange={() => {}}
+              isLast={true}
+            />
+          </SettingsSection>
+
+          {/* About Section */}
+          <SettingsSection title="About">
+            <SettingsItem
+              icon="⭐"
+              title="Rate App"
+              subtitle="Help us improve by rating the app"
+              onPress={handleRateApp}
+              showChevron={true}
+            />
+            <SettingsItem
+              icon="💬"
+              title="Contact Support"
+              subtitle="Get help or send feedback"
+              onPress={handleSupport}
+              showChevron={true}
+            />
+            <SettingsItem
+              icon="🔒"
+              title="Privacy Policy"
+              subtitle="Learn about our privacy practices"
+              onPress={handlePrivacy}
+              showChevron={true}
+            />
+            <SettingsItem
+              icon="ℹ️"
+              title="About Glasscast"
+              subtitle="Version & app information"
+              onPress={handleAbout}
+              showChevron={true}
+              isLast={true}
+            />
+          </SettingsSection>
+
+          {/* Account Section */}
+          {user && (
+            <SettingsSection title="Account">
+              <SettingsItem
+                icon="🚪"
+                title="Sign Out"
+                subtitle="Sign out of your account"
+                onPress={handleSignOut}
+                destructive={true}
+                isLast={true}
+              />
+            </SettingsSection>
+          )}
 
           {/* Bottom spacing */}
-          <View style={{ height: spacing["6xl"] }} />
+          <View style={styles.bottomSpacing} />
         </ScrollView>
       </SafeAreaView>
     </WeatherGlassBackground>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-  },
-  backIcon: {
-    fontSize: 20,
-    color: colors.text.primary,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-    textAlign: "center",
-    marginLeft: -44, // Compensate for back button width
-  },
-  headerSpacer: {
-    width: 44,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  profileContainer: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
-  },
-  profileCard: {
-    minHeight: 100,
-  },
-  profileContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  avatarContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.glass.accent,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: spacing.lg,
-  },
-  avatarText: {
-    fontSize: 28,
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-  },
-  profileEmail: {
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.normal,
-    color: colors.text.secondary,
-  },
-  sectionContainer: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
-  },
-  sectionTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-    marginBottom: spacing.md,
-    paddingLeft: spacing.sm,
-  },
-  settingItem: {
-    marginBottom: 0,
-  },
-  destructiveItem: {
-    borderColor: colors.accent.errorLight,
-    borderWidth: 1,
-  },
-  settingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  settingLeft: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  settingIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.glass.secondary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: spacing.md,
-  },
-  settingIcon: {
-    fontSize: 20,
-  },
-  settingInfo: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.medium,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-  },
-  destructiveText: {
-    color: colors.accent.error,
-  },
-  settingSubtitle: {
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.normal,
-    color: colors.text.secondary,
-  },
-  settingRight: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: spacing.md,
-  },
-  chevron: {
-    fontSize: 20,
-    color: colors.text.muted,
-    fontWeight: typography.weight.light,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border.light,
-    marginVertical: spacing.sm,
-    marginLeft: 56, // Align with text content
-  },
-});
+const createStyles = (colors: any, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    header: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.lg,
+      alignItems: "center",
+    },
+    headerTitle: {
+      fontSize: typography.size["2xl"],
+      fontWeight: typography.weight.bold,
+      color: colors.text.primary,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing["4xl"],
+    },
+    section: {
+      marginBottom: spacing.xl,
+    },
+    sectionTitle: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.semibold,
+      color: colors.text.primary,
+      marginBottom: spacing.md,
+      paddingLeft: spacing.sm,
+    },
+    sectionContainer: {
+      paddingVertical: spacing.xs,
+    },
+    settingsItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.border.glass,
+    },
+    settingsItemLast: {
+      borderBottomWidth: 0,
+    },
+    settingsItemLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    settingsItemIcon: {
+      fontSize: 20,
+      marginRight: spacing.md,
+      width: 24,
+      textAlign: "center",
+    },
+    settingsItemContent: {
+      flex: 1,
+    },
+    settingsItemTitle: {
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.medium,
+      color: colors.text.primary,
+      marginBottom: spacing.xs,
+    },
+    settingsItemSubtitle: {
+      fontSize: typography.size.sm,
+      color: colors.text.secondary,
+      lineHeight: 18,
+    },
+    settingsItemRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    settingsItemValue: {
+      fontSize: typography.size.sm,
+      color: colors.text.secondary,
+      marginRight: spacing.xs,
+    },
+    settingsItemChevron: {
+      fontSize: 20,
+      color: colors.text.muted,
+      fontWeight: typography.weight.light,
+    },
+    bottomSpacing: {
+      height: spacing["4xl"],
+    },
+  });

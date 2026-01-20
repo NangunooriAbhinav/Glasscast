@@ -1,25 +1,31 @@
-import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { useAuth } from '../context/AuthContext';
-import { colors } from '../theme/colors';
-import AuthNavigator from './AuthNavigator';
-import MainNavigator from './MainNavigator';
-import type { RootStackParamList } from './types';
+import React, { useEffect, useState } from "react";
+import { View, ActivityIndicator } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../theme";
+import AuthNavigator from "./AuthNavigator";
+import MainNavigator from "./MainNavigator";
+import type { RootStackParamList } from "./types";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
-const LoadingScreen: React.FC = () => (
-  <View style={{
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.base.black,
-  }}>
-    <ActivityIndicator size="large" color={colors.accent.primary} />
-  </View>
-);
+const LoadingScreen: React.FC = () => {
+  const { colors } = useTheme();
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: colors.background.primary,
+      }}
+    >
+      <ActivityIndicator size="large" color={colors.brand.primary} />
+    </View>
+  );
+};
 
 export const AppNavigator: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
@@ -44,7 +50,7 @@ export const AppNavigator: React.FC = () => {
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
-          presentation: 'modal',
+          presentation: "modal",
         }}
       >
         {user ? (
@@ -53,7 +59,7 @@ export const AppNavigator: React.FC = () => {
             name="Main"
             component={MainNavigator}
             options={{
-              animationTypeForReplace: 'push',
+              animationTypeForReplace: "push",
             }}
           />
         ) : (
@@ -62,7 +68,7 @@ export const AppNavigator: React.FC = () => {
             name="Auth"
             component={AuthNavigator}
             options={{
-              animationTypeForReplace: 'push',
+              animationTypeForReplace: "push",
             }}
           />
         )}

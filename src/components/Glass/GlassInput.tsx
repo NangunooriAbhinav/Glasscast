@@ -238,11 +238,11 @@ export const GlassInput = React.forwardRef<TextInput, GlassInputProps>(
             borderColor: error
               ? (errorBorderColor ?? colors.accent.errorLight)
               : isFocused
-                ? (focusBorderColor ?? colors.accent.primaryLight)
+                ? (focusBorderColor ?? colors.brand.primary)
                 : (customBorderColor ??
                   ("borderColor" in borderConfig
                     ? borderConfig.borderColor
-                    : colors.border.light)),
+                    : colors.border.glass)),
             ...shadowConfig,
           };
         case "filled":
@@ -261,8 +261,8 @@ export const GlassInput = React.forwardRef<TextInput, GlassInputProps>(
             borderBottomColor: error
               ? (errorBorderColor ?? colors.accent.errorLight)
               : isFocused
-                ? (focusBorderColor ?? colors.accent.primaryLight)
-                : (customBorderColor ?? colors.border.light),
+                ? (focusBorderColor ?? colors.brand.primary)
+                : (customBorderColor ?? colors.border.glass),
             borderRadius: 0,
             shadowOpacity: 0,
           };
@@ -280,11 +280,11 @@ export const GlassInput = React.forwardRef<TextInput, GlassInputProps>(
             borderColor: error
               ? (errorBorderColor ?? colors.accent.errorLight)
               : isFocused
-                ? (focusBorderColor ?? colors.accent.primaryLight)
+                ? (focusBorderColor ?? colors.brand.primary)
                 : (customBorderColor ??
                   ("borderColor" in borderConfig
                     ? borderConfig.borderColor
-                    : colors.border.light)),
+                    : colors.border.glass)),
             ...shadowConfig,
           };
       }
@@ -348,7 +348,7 @@ export const GlassInput = React.forwardRef<TextInput, GlassInputProps>(
         // Glow effect
         ...(enableGlow &&
           isFocused && {
-            shadowColor: glowColor ?? colors.accent.primary,
+            shadowColor: glowColor ?? colors.brand.primary,
             shadowOpacity: 0.3,
             shadowRadius: 15,
             elevation: 8,
@@ -483,9 +483,7 @@ export const GlassInput = React.forwardRef<TextInput, GlassInputProps>(
                 value={value}
                 onChangeText={onChangeText}
                 placeholder={placeholder}
-                placeholderTextColor={
-                  placeholderColor ?? colors.text.placeholder
-                }
+                placeholderTextColor={placeholderColor ?? colors.text.muted}
                 style={[textInputStyle, inputStyle]}
                 editable={!disabled && !loading}
                 multiline={multiline}
@@ -535,7 +533,7 @@ export const GlassInput = React.forwardRef<TextInput, GlassInputProps>(
               value={value}
               onChangeText={onChangeText}
               placeholder={placeholder}
-              placeholderTextColor={placeholderColor ?? colors.text.placeholder}
+              placeholderTextColor={placeholderColor ?? colors.text.muted}
               style={[textInputStyle, inputStyle]}
               editable={!disabled && !loading}
               multiline={multiline}
@@ -562,8 +560,8 @@ export const GlassInput = React.forwardRef<TextInput, GlassInputProps>(
                 >
                   <Text
                     style={{
-                      color: colors.text.primary,
-                      fontSize: 10,
+                      color: colors.brand.primary,
+                      fontSize: 12,
                       fontWeight: typography.weight.bold,
                     }}
                   >
@@ -686,7 +684,7 @@ export const WeatherLocationInput: React.FC<GlassInputProps> = (props) => (
     variant="outlined"
     material="frosted"
     enableGlow={true}
-    glowColor={colors.accent.primary}
+    glowColor={colors.brand.primary}
     enableReflection={true}
     fullWidth={true}
   />

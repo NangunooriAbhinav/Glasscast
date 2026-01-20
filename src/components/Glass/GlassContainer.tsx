@@ -116,7 +116,7 @@ export const GlassContainer: React.FC<GlassContainerProps> = ({
     const baseStyle: ViewStyle = {
       borderRadius: getBorderRadius,
       overflow,
-      backgroundColor: colors.base.transparent,
+      backgroundColor: colors.background.primary,
 
       // Apply spacing
       ...(padding && { padding: spacing[padding] as number }),
@@ -128,7 +128,7 @@ export const GlassContainer: React.FC<GlassContainerProps> = ({
         customBorderColor ??
         ("borderColor" in borderConfig
           ? borderConfig.borderColor
-          : colors.base.transparent),
+          : colors.border.primary),
 
       // Apply shadow
       ...shadowConfig,
@@ -216,7 +216,7 @@ export const GlassContainer: React.FC<GlassContainerProps> = ({
   const gradientOverlayStyle: ViewStyle = useMemo(() => {
     if (!enableGradientOverlay) return {};
 
-    const defaultGradient = colors.gradient.primary;
+    const defaultGradient = colors.gradients.primary;
     const gradient = gradientColors || defaultGradient;
 
     return {

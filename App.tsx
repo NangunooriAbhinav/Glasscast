@@ -1,19 +1,36 @@
-import React from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AuthProvider } from './src/context/AuthContext';
-import { SettingsProvider } from './src/context/SettingsContext';
-import { AppNavigator } from './src/navigation';
+import React from "react";
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AuthProvider } from "./src/context/AuthContext";
+import { SettingsProvider } from "./src/context/SettingsContext";
+import { ThemeProvider, useTheme } from "./src/theme";
+import { AppNavigator } from "./src/navigation";
+
+const AppContent = () => {
+  const { isDark } = useTheme();
+
+  return (
+    <>
+      <AppNavigator />
+      <StatusBar
+        style={isDark ? "light" : "dark"}
+        backgroundColor="transparent"
+        translucent
+      />
+    </>
+  );
+};
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <SettingsProvider>
-        <AuthProvider>
-          <AppNavigator />
-          <StatusBar style="light" backgroundColor="transparent" translucent />
-        </AuthProvider>
-      </SettingsProvider>
+      <ThemeProvider>
+        <SettingsProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </SettingsProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

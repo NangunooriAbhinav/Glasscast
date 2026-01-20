@@ -1,15 +1,15 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ViewStyle,
   TextStyle,
-} from 'react-native';
-import { GlassCard } from './Glass/GlassCard';
-import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
+} from "react-native";
+import { GlassCard } from "./Glass/GlassCard";
+import { colors } from "../theme/colors";
+import { spacing } from "../theme/spacing";
+import { typography } from "../theme/typography";
 
 export interface ErrorMessageProps {
   message: string;
@@ -23,7 +23,7 @@ export interface ErrorMessageProps {
 export const ErrorMessage: React.FC<ErrorMessageProps> = ({
   message,
   onRetry,
-  retryText = 'Try Again',
+  retryText = "Try Again",
   style,
   textStyle,
   showRetry = true,
@@ -37,7 +37,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
     color: colors.accent.error,
     fontSize: typography.size.base,
     fontWeight: typography.weight.normal,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: typography.size.lg,
     ...textStyle,
   };
@@ -50,8 +50,8 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     marginTop: spacing.md,
-    alignSelf: 'center',
-    shadowColor: colors.base.black,
+    alignSelf: "center",
+    shadowColor: colors.black,
     shadowOffset: spacing.shadowOffset.xs,
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -62,28 +62,23 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
     color: colors.accent.error,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.medium,
-    textAlign: 'center',
+    textAlign: "center",
   };
 
   return (
     <GlassCard
-      blurIntensity={25}
       borderRadius={spacing.radius.lg}
       style={containerStyle}
       padding="lg"
     >
-      <Text style={textStyleDefault}>
-        {message}
-      </Text>
+      <Text style={textStyleDefault}>{message}</Text>
       {showRetry && onRetry && (
         <TouchableOpacity
           style={retryButtonStyle}
           onPress={onRetry}
           activeOpacity={0.8}
         >
-          <Text style={retryTextStyle}>
-            {retryText}
-          </Text>
+          <Text style={retryTextStyle}>{retryText}</Text>
         </TouchableOpacity>
       )}
     </GlassCard>

@@ -1,15 +1,15 @@
-import React, { useRef } from 'react';
+import React, { useRef } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   Animated,
   StyleSheet,
-} from 'react-native';
-import { GlassContainer } from './GlassContainer';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+} from "react-native";
+import { GlassContainer } from "./GlassContainer";
+import { colors } from "../../theme/colors";
+import { spacing } from "../../theme/spacing";
+import { typography } from "../../theme/typography";
 
 interface GlassSwitchProps {
   value: boolean;
@@ -47,7 +47,7 @@ export const GlassSwitch: React.FC<GlassSwitchProps> = ({
 
   const backgroundColor = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [colors.glass.secondary, colors.accent.primary],
+    outputRange: [colors.glass.secondary, colors.glass.primary],
   });
 
   return (
@@ -100,9 +100,7 @@ export const GlassSwitchWithLabel: React.FC<GlassSwitchWithLabelProps> = ({
     <View style={styles.labelContainer}>
       <View style={styles.labelContent}>
         <Text style={styles.label}>{label}</Text>
-        {description && (
-          <Text style={styles.description}>{description}</Text>
-        )}
+        {description && <Text style={styles.description}>{description}</Text>}
       </View>
       <GlassSwitch {...switchProps} />
     </View>
@@ -120,7 +118,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 24,
     borderRadius: 12,
-    justifyContent: 'center',
+    justifyContent: "center",
     borderWidth: 0.5,
     borderColor: colors.glass.tertiary,
   },
@@ -129,16 +127,16 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     backgroundColor: colors.text.primary,
-    shadowColor: colors.base.black,
+    shadowColor: colors.background.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
   },
   labelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
   },

@@ -296,7 +296,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     const baseStyle: ViewStyle = {
       borderRadius: getBorderRadius,
       overflow,
-      backgroundColor: colors.base.transparent,
+      backgroundColor: colors.transparent,
       width: width as any,
       height: height as any,
       minHeight: minHeight as any,
@@ -311,7 +311,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
         customBorderColor ??
         ("borderColor" in borderConfig
           ? borderConfig.borderColor
-          : colors.base.transparent),
+          : colors.transparent),
 
       // Apply shadow
       ...shadowConfig,
@@ -327,14 +327,14 @@ export const GlassCard: React.FC<GlassCardProps> = ({
       ...(isFocused &&
         !isPressed &&
         !isHovered && {
-          borderColor: customBorderColor ?? colors.accent.primaryLight,
+          borderColor: customBorderColor ?? colors.brand.primary,
           borderWidth:
             (customBorderWidth ?? borderConfig.borderWidth ?? 0) + 0.5,
         }),
 
       // Glow effect
       ...(enableGlow && {
-        shadowColor: glowColor ?? colors.accent.primary,
+        shadowColor: glowColor || colors.brand.primary,
         shadowOpacity: 0.3,
         shadowRadius: 20,
       }),
@@ -429,7 +429,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   const gradientOverlayStyle: ViewStyle = useMemo(() => {
     if (!enableGradientOverlay) return {};
 
-    const defaultGradient = colors.gradient.primary;
+    const defaultGradient = colors.gradients.primary;
     const gradient = gradientColors || defaultGradient;
 
     return {

@@ -27,7 +27,8 @@ import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { useWeather } from "../../hooks/useWeather";
 import { useFavorites } from "../../hooks/useFavorites";
 import {
-  colors,
+  useTheme,
+  useThemedStyles,
   spacing,
   typography,
   glassEffects,
@@ -53,6 +54,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   navigation,
   route,
 }) => {
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [selectedLocation, setSelectedLocation] = useState(DEFAULT_LOCATION);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -212,10 +215,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           material="frosted"
           elevation="high"
           enableGlow={true}
-          glowColor={colors.accent.primary}
+          glowColor={colors.brand.primary}
           enableReflection={true}
           enableGradientOverlay={true}
-          gradientColors={colors.gradient.primary}
+          gradientColors={[...colors.gradients.primary]}
           borderRadius="3xl"
           padding="xl"
           style={styles.mainWeatherCard}
@@ -339,7 +342,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         material="mirror"
         elevation="floating"
         enableGlow={true}
-        glowColor={colors.accent.secondary}
+        glowColor={colors.brand.secondary}
         pressable={true}
         onPress={() => navigation.navigate("Search")}
         style={styles.actionCard}
@@ -593,7 +596,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               refreshing={refreshing}
               onRefresh={handleRefresh}
               tintColor={colors.text.primary}
-              colors={[colors.accent.primary]}
+              colors={[colors.brand.primary]}
             />
           }
         >
@@ -634,312 +637,314 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  searchContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  searchIcon: {
-    fontSize: 16,
-    opacity: 0.7,
-  },
-  clearIcon: {
-    fontSize: 18,
-    color: colors.text.secondary,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  locationSelectorContainer: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  locationSelector: {
-    minHeight: 60,
-  },
-  locationSelectorContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  locationSelectorIcon: {
-    fontSize: 24,
-    marginRight: spacing.md,
-  },
-  locationSelectorInfo: {
-    flex: 1,
-  },
-  locationSelectorTitle: {
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.medium,
-    color: colors.text.secondary,
-    marginBottom: spacing.xs,
-  },
-  locationSelectorSubtitle: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-  },
-  locationSelectorChevron: {
-    fontSize: 20,
-    color: colors.text.muted,
-    fontWeight: typography.weight.light,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: spacing["4xl"],
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing["4xl"],
-  },
-  mainCardContainer: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
-  },
-  mainWeatherCard: {
-    minHeight: 320,
-  },
-  mainWeatherContent: {
-    flex: 1,
-  },
-  locationText: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.medium,
-    color: colors.text.primary,
-    textAlign: "center",
-    marginBottom: spacing.lg,
-  },
-  temperatureContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing["2xl"],
-  },
-  temperatureText: {
-    fontSize: typography.size["6xl"],
-    fontWeight: typography.weight.thin,
-    color: colors.text.primary,
-    marginRight: spacing.lg,
-  },
-  conditionContainer: {
-    alignItems: "center",
-  },
-  weatherIcon: {
-    fontSize: 48,
-    marginBottom: spacing.sm,
-  },
-  conditionText: {
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.medium,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-    textTransform: "capitalize",
-    textAlign: "center",
-  },
-  feelsLikeText: {
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.normal,
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  detailsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: spacing.lg,
-  },
-  detailItem: {
-    width: "48%",
-    alignItems: "center",
-    marginBottom: spacing.md,
-  },
-  detailLabel: {
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.normal,
-    color: colors.text.secondary,
-    marginBottom: spacing.xs,
-  },
-  detailValue: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-  },
-  highLowContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: spacing.xl,
-  },
-  highLowText: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.medium,
-    color: colors.text.secondary,
-  },
-  actionCardsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
-  },
-  actionCard: {
-    width: (screenWidth - spacing.lg * 3) / 2,
-    aspectRatio: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionCardIcon: {
-    fontSize: 32,
-    marginBottom: spacing.sm,
-  },
-  actionCardTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-  },
-  actionCardSubtitle: {
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.normal,
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  fab: {
-    position: "absolute",
-    right: spacing.lg,
-    bottom: spacing["4xl"],
-    width: 56,
-    height: 56,
-  },
-  fabIcon: {
-    fontSize: 24,
-    fontWeight: typography.weight.bold,
-    color: colors.text.primary,
-  },
-  tabContainer: {
-    flexDirection: "row",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: spacing.radius.lg,
-    backgroundColor: colors.glass.secondary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: spacing.xs,
-  },
-  tabButtonActive: {
-    backgroundColor: colors.glass.accent,
-  },
-  tabText: {
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.medium,
-    color: colors.text.secondary,
-  },
-  tabTextActive: {
-    color: colors.text.primary,
-    fontWeight: typography.weight.semibold,
-  },
-  favoritesContainer: {
-    paddingHorizontal: spacing.lg,
-  },
-  favoriteCard: {
-    marginBottom: spacing.sm,
-  },
-  favoriteCardContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  favoriteInfo: {
-    flex: 1,
-  },
-  favoriteHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: spacing.xs,
-  },
-  favoriteTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-  },
-  favoriteCoordinates: {
-    fontSize: typography.size.sm,
-    color: colors.text.secondary,
-  },
-  favoriteWeatherPreview: {
-    alignItems: "center",
-    marginLeft: spacing.md,
-  },
-  favoriteWeatherIcon: {
-    fontSize: 32,
-    marginBottom: spacing.xs,
-  },
-  favoriteActionText: {
-    fontSize: typography.size.xs,
-    color: colors.text.secondary,
-    textAlign: "center",
-  },
-  removeFavoriteButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.glass.tertiary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  removeFavoriteIcon: {
-    fontSize: 16,
-    color: colors.text.secondary,
-  },
-  emptyStateContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
-  },
-  emptyStateCard: {
-    alignItems: "center",
-    paddingVertical: spacing["2xl"],
-  },
-  emptyStateIcon: {
-    fontSize: 64,
-    marginBottom: spacing.lg,
-  },
-  emptyStateTitle: {
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    color: colors.text.primary,
-    marginBottom: spacing.md,
-    textAlign: "center",
-  },
-  emptyStateMessage: {
-    fontSize: typography.size.base,
-    color: colors.text.secondary,
-    textAlign: "center",
-    marginBottom: spacing.xl,
-    lineHeight: 24,
-  },
-  addFavoriteButton: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    borderRadius: spacing.radius.lg,
-    backgroundColor: colors.glass.accent,
-  },
-  addFavoriteButtonText: {
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-  },
-});
+const createStyles = (colors: any, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    searchContainer: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    searchIcon: {
+      fontSize: 16,
+      opacity: 0.7,
+      color: colors.text.secondary,
+    },
+    clearIcon: {
+      fontSize: 18,
+      color: colors.text.secondary,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    locationSelectorContainer: {
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.lg,
+    },
+    locationSelector: {
+      minHeight: 60,
+    },
+    locationSelectorContent: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    locationSelectorIcon: {
+      fontSize: 24,
+      marginRight: spacing.md,
+    },
+    locationSelectorInfo: {
+      flex: 1,
+    },
+    locationSelectorTitle: {
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.medium,
+      color: colors.text.secondary,
+      marginBottom: spacing.xs,
+    },
+    locationSelectorSubtitle: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.semibold,
+      color: colors.text.primary,
+    },
+    locationSelectorChevron: {
+      fontSize: 20,
+      color: colors.text.muted,
+      fontWeight: typography.weight.light,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingVertical: spacing["4xl"],
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing["4xl"],
+    },
+    mainCardContainer: {
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.xl,
+    },
+    mainWeatherCard: {
+      minHeight: 320,
+    },
+    mainWeatherContent: {
+      flex: 1,
+    },
+    locationText: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.medium,
+      color: colors.text.primary,
+      textAlign: "center",
+      marginBottom: spacing.lg,
+    },
+    temperatureContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing["2xl"],
+    },
+    temperatureText: {
+      fontSize: typography.size["6xl"],
+      fontWeight: typography.weight.thin,
+      color: colors.text.primary,
+      marginRight: spacing.lg,
+    },
+    conditionContainer: {
+      alignItems: "center",
+    },
+    weatherIcon: {
+      fontSize: 48,
+      marginBottom: spacing.sm,
+    },
+    conditionText: {
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.medium,
+      color: colors.text.primary,
+      marginBottom: spacing.xs,
+      textTransform: "capitalize",
+      textAlign: "center",
+    },
+    feelsLikeText: {
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.normal,
+      color: colors.text.secondary,
+      textAlign: "center",
+    },
+    detailsGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      marginBottom: spacing.lg,
+    },
+    detailItem: {
+      width: "48%",
+      alignItems: "center",
+      marginBottom: spacing.md,
+    },
+    detailLabel: {
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.normal,
+      color: colors.text.secondary,
+      marginBottom: spacing.xs,
+    },
+    detailValue: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.semibold,
+      color: colors.text.primary,
+    },
+    highLowContainer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: spacing.xl,
+    },
+    highLowText: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.medium,
+      color: colors.text.secondary,
+    },
+    actionCardsContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.xl,
+    },
+    actionCard: {
+      width: (screenWidth - spacing.lg * 3) / 2,
+      aspectRatio: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    actionCardIcon: {
+      fontSize: 32,
+      marginBottom: spacing.sm,
+    },
+    actionCardTitle: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.semibold,
+      color: colors.text.primary,
+      marginBottom: spacing.xs,
+    },
+    actionCardSubtitle: {
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.normal,
+      color: colors.text.secondary,
+      textAlign: "center",
+    },
+    fab: {
+      position: "absolute",
+      right: spacing.lg,
+      bottom: spacing["4xl"],
+      width: 56,
+      height: 56,
+    },
+    fabIcon: {
+      fontSize: 24,
+      fontWeight: typography.weight.bold,
+      color: colors.text.primary,
+    },
+    tabContainer: {
+      flexDirection: "row",
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    tabButton: {
+      flex: 1,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      borderRadius: spacing.radius.lg,
+      backgroundColor: colors.glass.secondary,
+      alignItems: "center",
+      justifyContent: "center",
+      marginHorizontal: spacing.xs,
+    },
+    tabButtonActive: {
+      backgroundColor: colors.glass.accent,
+    },
+    tabText: {
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.medium,
+      color: colors.text.secondary,
+    },
+    tabTextActive: {
+      color: colors.text.primary,
+      fontWeight: typography.weight.semibold,
+    },
+    favoritesContainer: {
+      paddingHorizontal: spacing.lg,
+    },
+    favoriteCard: {
+      marginBottom: spacing.sm,
+    },
+    favoriteCardContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    favoriteInfo: {
+      flex: 1,
+    },
+    favoriteHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: spacing.xs,
+    },
+    favoriteTitle: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.semibold,
+      color: colors.text.primary,
+    },
+    favoriteCoordinates: {
+      fontSize: typography.size.sm,
+      color: colors.text.secondary,
+    },
+    favoriteWeatherPreview: {
+      alignItems: "center",
+      marginLeft: spacing.md,
+    },
+    favoriteWeatherIcon: {
+      fontSize: 32,
+      marginBottom: spacing.xs,
+    },
+    favoriteActionText: {
+      fontSize: typography.size.xs,
+      color: colors.text.secondary,
+      textAlign: "center",
+    },
+    removeFavoriteButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.glass.tertiary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    removeFavoriteIcon: {
+      fontSize: 16,
+      color: colors.text.secondary,
+    },
+    emptyStateContainer: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.xl,
+    },
+    emptyStateCard: {
+      alignItems: "center",
+      paddingVertical: spacing["2xl"],
+    },
+    emptyStateIcon: {
+      fontSize: 64,
+      marginBottom: spacing.lg,
+    },
+    emptyStateTitle: {
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      color: colors.text.primary,
+      marginBottom: spacing.md,
+      textAlign: "center",
+    },
+    emptyStateMessage: {
+      fontSize: typography.size.base,
+      color: colors.text.secondary,
+      textAlign: "center",
+      marginBottom: spacing.xl,
+      lineHeight: 24,
+    },
+    addFavoriteButton: {
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xl,
+      borderRadius: spacing.radius.lg,
+      backgroundColor: colors.glass.accent,
+    },
+    addFavoriteButtonText: {
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.semibold,
+      color: colors.text.primary,
+    },
+  });

@@ -1,51 +1,62 @@
-import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { BlurView } from 'expo-blur';
-import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
+import React from "react";
+import {
+  View,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Animated,
+} from "react-native";
+import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { BlurView } from "expo-blur";
+import { useTheme } from "../theme";
+import { spacing } from "../theme/spacing";
+import { typography } from "../theme/typography";
 
-interface TabBarIcon {
+interface TabBarIconProps {
   focused: boolean;
-  color: string;
-  size: number;
+  children: React.ReactNode;
 }
 
-const TabBarIcon: React.FC<TabBarIcon> = ({ focused, children }) => (
-  <View style={[
-    styles.iconContainer,
-    focused && styles.iconContainerFocused
-  ]}>
-    {children}
-  </View>
-);
+const TabBarIcon: React.FC<TabBarIconProps> = ({ focused, children }) => {
+  const { colors, isDark } = useTheme();
+  const styles = createStyles(colors, isDark);
+
+  return (
+    <View
+      style={[styles.iconContainer, focused && styles.iconContainerFocused]}
+    >
+      {children}
+    </View>
+  );
+};
 
 export const GlassTabBar: React.FC<BottomTabBarProps> = ({
   state,
   descriptors,
-  navigation
+  navigation,
 }) => {
+  const { colors, isDark } = useTheme();
   return (
     <BlurView
       intensity={30}
-      tint="light"
-      style={styles.container}
+      tint={isDark ? "dark" : "light"}
+      style={createStyles(colors, isDark).container}
     >
-      <View style={styles.tabBar}>
+      <View style={createStyles(colors, isDark).tabBar}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
-          const label = options.tabBarLabel !== undefined
-            ? options.tabBarLabel
-            : options.title !== undefined
-            ? options.title
-            : route.name;
+          const label =
+            options.tabBarLabel !== undefined
+              ? options.tabBarLabel
+              : options.title !== undefined
+                ? options.title
+                : route.name;
 
           const isFocused = state.index === index;
 
           const onPress = () => {
             const event = navigation.emit({
-              type: 'tabPress',
+              type: "tabPress",
               target: route.key,
               canPreventDefault: true,
             });
@@ -57,30 +68,47 @@ export const GlassTabBar: React.FC<BottomTabBarProps> = ({
 
           const onLongPress = () => {
             navigation.emit({
-              type: 'tabLongPress',
+              type: "tabLongPress",
               target: route.key,
             });
           };
 
           const getTabIcon = (routeName: string, focused: boolean) => {
-            const iconColor = focused ? colors.accent.primary : colors.text.secondary;
+            const iconColor = focused
+              ? colors.brand.primary
+              : colors.text.secondary;
 
             switch (routeName) {
-              case 'Home':
+              case "Home":
                 return (
-                  <Text style={[styles.icon, { color: iconColor }]}>
+                  <Text
+                    style={[
+                      createStyles(colors, isDark).icon,
+                      { color: iconColor },
+                    ]}
+                  >
                     🏠
                   </Text>
                 );
-              case 'Search':
+              case "Search":
                 return (
-                  <Text style={[styles.icon, { color: iconColor }]}>
+                  <Text
+                    style={[
+                      createStyles(colors, isDark).icon,
+                      { color: iconColor },
+                    ]}
+                  >
                     🔍
                   </Text>
                 );
-              case 'Settings':
+              case "Settings":
                 return (
-                  <Text style={[styles.icon, { color: iconColor }]}>
+                  <Text
+                    style={[
+                      createStyles(colors, isDark).icon,
+                      { color: iconColor },
+                    ]}
+                  >
                     ⚙️
                   </Text>
                 );
@@ -95,19 +123,22 @@ export const GlassTabBar: React.FC<BottomTabBarProps> = ({
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
               accessibilityLabel={options.tabBarAccessibilityLabel}
-              testID={options.tabBarTestID}
               onPress={onPress}
               onLongPress={onLongPress}
-              style={styles.tab}
+              style={createStyles(colors, isDark).tab}
             >
               <TabBarIcon focused={isFocused}>
                 {getTabIcon(route.name, isFocused)}
               </TabBarIcon>
-              <Text style={[
-                styles.label,
-                isFocused ? styles.labelFocused : styles.labelUnfocused
-              ]}>
-                {typeof label === 'string' ? label : ''}
+              <Text
+                style={[
+                  createStyles(colors, isDark).label,
+                  isFocused
+                    ? createStyles(colors, isDark).labelFocused
+                    : createStyles(colors, isDark).labelUnfocused,
+                ]}
+              >
+                {typeof label === "string" ? label : ""}
               </Text>
             </TouchableOpacity>
           );
@@ -117,56 +148,57 @@ export const GlassTabBar: React.FC<BottomTabBarProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopWidth: 0.5,
-    borderTopColor: colors.glass.secondary,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: 'transparent',
-    paddingBottom: spacing.xl, // Account for safe area
-    paddingTop: spacing.md,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xs,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: spacing.radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-    backgroundColor: 'transparent',
-  },
-  iconContainerFocused: {
-    backgroundColor: colors.glass.accent,
-    shadowColor: colors.base.black,
-    shadowOffset: spacing.shadowOffset.sm,
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  icon: {
-    fontSize: 20,
-  },
-  label: {
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.medium,
-    textAlign: 'center',
-  },
-  labelFocused: {
-    color: colors.accent.primary,
-  },
-  labelUnfocused: {
-    color: colors.text.secondary,
-  },
-});
+const createStyles = (colors: any, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      borderTopWidth: 0.5,
+      borderTopColor: colors.glass.secondary,
+    },
+    tabBar: {
+      flexDirection: "row",
+      backgroundColor: "transparent",
+      paddingBottom: spacing.xl, // Account for safe area
+      paddingTop: spacing.md,
+    },
+    tab: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: spacing.xs,
+    },
+    iconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: spacing.radius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.xs,
+      backgroundColor: "transparent",
+    },
+    iconContainerFocused: {
+      backgroundColor: colors.glass.accent,
+      shadowColor: colors.black,
+      shadowOffset: spacing.shadowOffset.sm,
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    icon: {
+      fontSize: 20,
+    },
+    label: {
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.medium,
+      textAlign: "center",
+    },
+    labelFocused: {
+      color: colors.brand.primary,
+    },
+    labelUnfocused: {
+      color: colors.text.secondary,
+    },
+  });
