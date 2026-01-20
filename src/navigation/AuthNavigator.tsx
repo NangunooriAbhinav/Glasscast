@@ -15,14 +15,14 @@ const AuthNavigator: React.FC = () => {
     >
       <Stack.Screen
         name="Login"
-        getComponent={() => require('../screens/Auth/LoginScreen').LoginScreen}
+        component={require('../screens/Auth/LoginScreen').LoginScreen}
         options={{
           title: 'Login',
         }}
       />
       <Stack.Screen
         name="Signup"
-        getComponent={() => require('../screens/Auth/SignupScreen').SignupScreen}
+        component={require('../screens/Auth/SignupScreen').SignupScreen}
         options={{
           title: 'Sign Up',
         }}

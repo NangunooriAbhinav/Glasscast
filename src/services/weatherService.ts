@@ -6,6 +6,8 @@ import type {
   WeatherError,
   CurrentWeather,
   WeatherForecast,
+  OneCallData,
+  CompleteWeatherData,
 } from '../types/weather';
 
 const WEATHER_API_BASE_URL = 'https://api.openweathermap.org/data/2.5';
@@ -106,6 +108,49 @@ class WeatherService {
   }
 
   /**
+   * Get complete weather data using One Call 3.0 API
+   * Includes current, hourly, daily, and alert data
+   */
+  async getOneCallWeather(
+    lat: number,
+    lon: number,
+    options: {
+      exclude?: string[];
+      units?: 'standard' | 'metric' | 'imperial';
+      lang?: string;
+    } = {}
+  ): Promise<WeatherResponse<CompleteWeatherData>> {
+    try {
+      const { exclude = [], units = 'metric', lang } = options;
+
+      const params: any = {
+        lat,
+        lon,
+        appid: API_KEY,
+        units,
+      };
+
+      if (exclude.length > 0) {
+        params.exclude = exclude.join(',');
+      }
+
+      if (lang) {
+        params.lang = lang;
+      }
+
+      const response = await weatherApi.get<OneCallData>(
+        `https://api.openweathermap.org/data/3.0/onecall`,
+        { params }
+      );
+
+      const transformedData = this.transformOneCallData(response.data);
+      return { data: transformedData, error: null };
+    } catch (error) {
+      return this.handleApiError(error, 'Failed to fetch complete weather data');
+    }
+  }
+
+  /**
    * Transform raw weather API response to our interface
    */
   private transformCurrentWeather(data: WeatherData): CurrentWeather {
@@ -202,6 +247,78 @@ class WeatherService {
         lon: data.city.coord.lon,
       },
       forecast,
+    };
+  }
+
+  /**
+   * Transform raw One Call API response to our CompleteWeatherData interface
+   */
+  private transformOneCallData(data: OneCallData): CompleteWeatherData {
+    return {
+      location: {
+        lat: data.lat,
+        lon: data.lon,
+        timezone: data.timezone,
+        timezoneOffset: data.timezone_offset,
+      },
+      current: {
+        timestamp: data.current.dt,
+        temperature: Math.round(data.current.temp),
+        feelsLike: Math.round(data.current.feels_like),
+        humidity: data.current.humidity,
+        pressure: data.current.pressure,
+        visibility: data.current.visibility,
+        uvIndex: data.current.uvi,
+        windSpeed: data.current.wind_speed,
+        windDirection: data.current.wind_deg,
+        sunrise: data.current.sunrise,
+        sunset: data.current.sunset,
+        condition: data.current.weather[0].main,
+        description: data.current.weather[0].description,
+        icon: data.current.weather[0].icon,
+      },
+      hourly: data.hourly?.slice(0, 24).map(hour => ({ // First 24 hours
+        timestamp: hour.dt,
+        temperature: Math.round(hour.temp),
+        feelsLike: Math.round(hour.feels_like),
+        humidity: hour.humidity,
+        pop: Math.round(hour.pop * 100),
+        condition: hour.weather[0].main,
+        icon: hour.weather[0].icon,
+      })),
+      daily: data.daily?.map(day => ({
+        timestamp: day.dt,
+        sunrise: day.sunrise,
+        sunset: day.sunset,
+        moonrise: day.moonrise,
+        moonset: day.moonset,
+        moonPhase: day.moon_phase,
+        summary: day.summary,
+        temperature: {
+          day: Math.round(day.temp.day),
+          min: Math.round(day.temp.min),
+          max: Math.round(day.temp.max),
+          night: Math.round(day.temp.night),
+          eve: Math.round(day.temp.eve),
+          morn: Math.round(day.temp.morn),
+        },
+        feelsLike: {
+          day: Math.round(day.feels_like.day),
+          night: Math.round(day.feels_like.night),
+          eve: Math.round(day.feels_like.eve),
+          morn: Math.round(day.feels_like.morn),
+        },
+        humidity: day.humidity,
+        pressure: day.pressure,
+        windSpeed: day.wind_speed,
+        windDirection: day.wind_deg,
+        condition: day.weather[0].main,
+        description: day.weather[0].description,
+        icon: day.weather[0].icon,
+        pop: Math.round(day.pop * 100),
+        uvIndex: day.uvi,
+      })),
+      alerts: data.alerts,
     };
   }
 
