@@ -1,5 +1,5 @@
-import { supabase } from './supabase';
-import type { FavoriteCity } from '../types/database';
+import { supabase } from "./supabase";
+import type { FavoriteCity, Database } from "../types/database";
 
 export interface CityData {
   city_name: string;
@@ -21,13 +21,15 @@ class FavoritesService {
   /**
    * Get all favorite cities for a user
    */
-  async getFavorites(userId: string): Promise<FavoritesResponse<FavoriteCity[]>> {
+  async getFavorites(
+    userId: string,
+  ): Promise<FavoritesResponse<FavoriteCity[]>> {
     try {
       const { data, error } = await supabase
-        .from('favorite_cities')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .from("favorite_cities")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
       if (error) {
         return {
@@ -47,8 +49,8 @@ class FavoritesService {
       return {
         data: null,
         error: {
-          message: 'Failed to fetch favorites',
-          code: 'FETCH_FAVORITES_ERROR',
+          message: "Failed to fetch favorites",
+          code: "FETCH_FAVORITES_ERROR",
         },
       };
     }
@@ -57,7 +59,10 @@ class FavoritesService {
   /**
    * Add a city to user's favorites
    */
-  async addFavorite(userId: string, city: CityData): Promise<FavoritesResponse<FavoriteCity>> {
+  async addFavorite(
+    userId: string,
+    city: CityData,
+  ): Promise<FavoritesResponse<FavoriteCity>> {
     try {
       // Check if city is already favorited
       const existingCheck = await this.isFavorite(userId, city.city_name);
@@ -65,20 +70,20 @@ class FavoritesService {
         return {
           data: null,
           error: {
-            message: 'City is already in favorites',
-            code: 'CITY_ALREADY_FAVORITED',
+            message: "City is already in favorites",
+            code: "CITY_ALREADY_FAVORITED",
           },
         };
       }
 
       const { data, error } = await supabase
-        .from('favorite_cities')
+        .from("favorite_cities")
         .insert({
           user_id: userId,
           city_name: city.city_name,
           lat: city.lat,
           lon: city.lon,
-        })
+        } as any)
         .select()
         .single();
 
@@ -100,8 +105,8 @@ class FavoritesService {
       return {
         data: null,
         error: {
-          message: 'Failed to add favorite',
-          code: 'ADD_FAVORITE_ERROR',
+          message: "Failed to add favorite",
+          code: "ADD_FAVORITE_ERROR",
         },
       };
     }
@@ -113,9 +118,9 @@ class FavoritesService {
   async removeFavorite(cityId: string): Promise<FavoritesResponse<boolean>> {
     try {
       const { error } = await supabase
-        .from('favorite_cities')
+        .from("favorite_cities")
         .delete()
-        .eq('id', cityId);
+        .eq("id", cityId);
 
       if (error) {
         return {
@@ -135,8 +140,8 @@ class FavoritesService {
       return {
         data: null,
         error: {
-          message: 'Failed to remove favorite',
-          code: 'REMOVE_FAVORITE_ERROR',
+          message: "Failed to remove favorite",
+          code: "REMOVE_FAVORITE_ERROR",
         },
       };
     }
@@ -145,13 +150,16 @@ class FavoritesService {
   /**
    * Check if a city is favorited by user
    */
-  async isFavorite(userId: string, cityName: string): Promise<FavoritesResponse<boolean>> {
+  async isFavorite(
+    userId: string,
+    cityName: string,
+  ): Promise<FavoritesResponse<boolean>> {
     try {
       const { data, error } = await supabase
-        .from('favorite_cities')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('city_name', cityName)
+        .from("favorite_cities")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("city_name", cityName)
         .limit(1);
 
       if (error) {
@@ -172,8 +180,8 @@ class FavoritesService {
       return {
         data: null,
         error: {
-          message: 'Failed to check favorite status',
-          code: 'CHECK_FAVORITE_ERROR',
+          message: "Failed to check favorite status",
+          code: "CHECK_FAVORITE_ERROR",
         },
       };
     }
@@ -183,7 +191,10 @@ class FavoritesService {
    * Optimistically add a favorite (for immediate UI updates)
    * Returns the temporary favorite object and a function to revert on error
    */
-  createOptimisticFavorite(userId: string, city: CityData): {
+  createOptimisticFavorite(
+    userId: string,
+    city: CityData,
+  ): {
     optimisticFavorite: FavoriteCity;
     revert: () => void;
   } {

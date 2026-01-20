@@ -1,6 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { favoritesService, type FavoriteCity, type CityData, type FavoritesError } from '../services/favoritesService';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  favoritesService,
+  type CityData,
+  type FavoritesError,
+} from "../services/favoritesService";
+import type { FavoriteCity } from "../types/database";
+import { useAuth } from "../context/AuthContext";
 
 interface UseFavoritesState {
   favorites: FavoriteCity[];
@@ -31,7 +36,7 @@ export const useFavorites = (): UseFavoritesReturn => {
 
     if (!isMountedRef.current) return;
 
-    setState(prev => ({ ...prev, loading: true, error: null }));
+    setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
       const response = await favoritesService.getFavorites(user.id);
@@ -46,120 +51,136 @@ export const useFavorites = (): UseFavoritesReturn => {
     } catch (error) {
       if (!isMountedRef.current) return;
 
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         loading: false,
         error: {
-          message: 'An unexpected error occurred',
-          code: 'UNKNOWN_ERROR',
+          message: "An unexpected error occurred",
+          code: "UNKNOWN_ERROR",
         },
       }));
     }
   }, [user?.id]);
 
-  const addFavorite = useCallback(async (city: CityData): Promise<boolean> => {
-    if (!user?.id) return false;
+  const addFavorite = useCallback(
+    async (city: CityData): Promise<boolean> => {
+      if (!user?.id) return false;
 
-    // Optimistic update
-    const { optimisticFavorite } = favoritesService.createOptimisticFavorite(user.id, city);
-    setState(prev => ({
-      ...prev,
-      favorites: [...prev.favorites, optimisticFavorite],
-    }));
+      // Optimistic update
+      const { optimisticFavorite } = favoritesService.createOptimisticFavorite(
+        user.id,
+        city,
+      );
+      setState((prev) => ({
+        ...prev,
+        favorites: [...prev.favorites, optimisticFavorite],
+      }));
 
-    try {
-      const response = await favoritesService.addFavorite(user.id, city);
+      try {
+        const response = await favoritesService.addFavorite(user.id, city);
 
-      if (response.error) {
-        // Revert optimistic update on error
-        setState(prev => ({
+        if (response.error) {
+          // Revert optimistic update on error
+          setState((prev) => ({
+            ...prev,
+            favorites: prev.favorites.filter(
+              (fav) => fav.id !== optimisticFavorite.id,
+            ),
+            error: response.error,
+          }));
+          return false;
+        }
+
+        // Replace optimistic favorite with real data
+        setState((prev) => ({
           ...prev,
-          favorites: prev.favorites.filter(fav => fav.id !== optimisticFavorite.id),
-          error: response.error,
+          favorites: prev.favorites.map((fav) =>
+            fav.id === optimisticFavorite.id ? response.data! : fav,
+          ),
+        }));
+
+        return true;
+      } catch (error) {
+        // Revert optimistic update on error
+        setState((prev) => ({
+          ...prev,
+          favorites: prev.favorites.filter(
+            (fav) => fav.id !== optimisticFavorite.id,
+          ),
+          error: {
+            message: "Failed to add favorite",
+            code: "ADD_FAVORITE_ERROR",
+          },
         }));
         return false;
       }
+    },
+    [user?.id],
+  );
 
-      // Replace optimistic favorite with real data
-      setState(prev => ({
+  const removeFavorite = useCallback(
+    async (cityId: string): Promise<boolean> => {
+      // Optimistic update
+      const favoriteToRemove = state.favorites.find((fav) => fav.id === cityId);
+      setState((prev) => ({
         ...prev,
-        favorites: prev.favorites.map(fav =>
-          fav.id === optimisticFavorite.id ? response.data! : fav
-        ),
+        favorites: prev.favorites.filter((fav) => fav.id !== cityId),
       }));
 
-      return true;
-    } catch (error) {
-      // Revert optimistic update on error
-      setState(prev => ({
-        ...prev,
-        favorites: prev.favorites.filter(fav => fav.id !== optimisticFavorite.id),
-        error: {
-          message: 'Failed to add favorite',
-          code: 'ADD_FAVORITE_ERROR',
-        },
-      }));
-      return false;
-    }
-  }, [user?.id]);
+      try {
+        const response = await favoritesService.removeFavorite(cityId);
 
-  const removeFavorite = useCallback(async (cityId: string): Promise<boolean> => {
-    // Optimistic update
-    const favoriteToRemove = state.favorites.find(fav => fav.id === cityId);
-    setState(prev => ({
-      ...prev,
-      favorites: prev.favorites.filter(fav => fav.id !== cityId),
-    }));
+        if (response.error) {
+          // Revert optimistic update on error
+          if (favoriteToRemove) {
+            setState((prev) => ({
+              ...prev,
+              favorites: [...prev.favorites, favoriteToRemove],
+              error: response.error,
+            }));
+          }
+          return false;
+        }
 
-    try {
-      const response = await favoritesService.removeFavorite(cityId);
-
-      if (response.error) {
+        return true;
+      } catch (error) {
         // Revert optimistic update on error
         if (favoriteToRemove) {
-          setState(prev => ({
+          setState((prev) => ({
             ...prev,
             favorites: [...prev.favorites, favoriteToRemove],
-            error: response.error,
+            error: {
+              message: "Failed to remove favorite",
+              code: "REMOVE_FAVORITE_ERROR",
+            },
           }));
         }
         return false;
       }
+    },
+    [state.favorites],
+  );
 
-      return true;
-    } catch (error) {
-      // Revert optimistic update on error
-      if (favoriteToRemove) {
-        setState(prev => ({
-          ...prev,
-          favorites: [...prev.favorites, favoriteToRemove],
-          error: {
-            message: 'Failed to remove favorite',
-            code: 'REMOVE_FAVORITE_ERROR',
-          },
-        }));
+  const isFavorite = useCallback(
+    async (cityName: string): Promise<boolean> => {
+      if (!user?.id) return false;
+
+      try {
+        const response = await favoritesService.isFavorite(user.id, cityName);
+        return response.data || false;
+      } catch (error) {
+        return false;
       }
-      return false;
-    }
-  }, [state.favorites]);
-
-  const isFavorite = useCallback(async (cityName: string): Promise<boolean> => {
-    if (!user?.id) return false;
-
-    try {
-      const response = await favoritesService.isFavorite(user.id, cityName);
-      return response.data || false;
-    } catch (error) {
-      return false;
-    }
-  }, [user?.id]);
+    },
+    [user?.id],
+  );
 
   const refreshFavorites = useCallback(async () => {
     await fetchFavorites();
   }, [fetchFavorites]);
 
   const clearError = useCallback(() => {
-    setState(prev => ({ ...prev, error: null }));
+    setState((prev) => ({ ...prev, error: null }));
   }, []);
 
   useEffect(() => {

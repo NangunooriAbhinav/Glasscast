@@ -25,9 +25,7 @@ export const Button: React.FC<ButtonProps> = ({
       enablePress={true}
       enableRipple={true}
       {...props}
-    >
-      {children}
-    </GlassButton>
+    />
   );
 };
 

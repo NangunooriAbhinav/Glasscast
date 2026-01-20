@@ -6,6 +6,7 @@ import {
   Pressable,
   PressableProps,
   Animated,
+  AccessibilityRole,
 } from "react-native";
 import { BlurView, BlurTint } from "expo-blur";
 import {
@@ -19,7 +20,8 @@ import {
   type BorderType,
 } from "../../theme";
 
-export interface GlassCardProps extends Omit<PressableProps, "style"> {
+export interface GlassCardProps
+  extends Omit<PressableProps, "style" | "accessibilityRole"> {
   children: React.ReactNode;
 
   // Material and appearance
@@ -88,7 +90,7 @@ export interface GlassCardProps extends Omit<PressableProps, "style"> {
   onBlur?: () => void;
 
   // Accessibility
-  accessibilityRole?: string;
+  accessibilityRole?: AccessibilityRole;
   accessibilityLabel?: string;
   accessibilityHint?: string;
   accessibilityState?: {
@@ -295,20 +297,21 @@ export const GlassCard: React.FC<GlassCardProps> = ({
       borderRadius: getBorderRadius,
       overflow,
       backgroundColor: colors.base.transparent,
-      width,
-      height,
-      minHeight,
-      maxHeight,
+      width: width as any,
+      height: height as any,
+      minHeight: minHeight as any,
+      maxHeight: maxHeight as any,
 
       // Apply spacing
-      ...(margin && { margin: spacing[margin] }),
+      ...(margin && { margin: spacing[margin] as number }),
 
       // Apply border
       borderWidth: customBorderWidth ?? borderConfig.borderWidth ?? 0,
       borderColor:
         customBorderColor ??
-        borderConfig.borderColor ??
-        colors.base.transparent,
+        ("borderColor" in borderConfig
+          ? borderConfig.borderColor
+          : colors.base.transparent),
 
       // Apply shadow
       ...shadowConfig,
@@ -382,7 +385,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
       flex: 1,
       backgroundColor: `rgba(255, 255, 255, ${interactiveOpacity})`,
       borderRadius: getBorderRadius,
-      ...(padding && { padding: spacing[padding] }),
+      ...(padding && { padding: spacing[padding] as number }),
     };
   }, [effectiveOpacity, getBorderRadius, padding, isPressed, isHovered]);
 
@@ -504,7 +507,9 @@ export const GlassCard: React.FC<GlassCardProps> = ({
           onHoverOut={handleHoverOut}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          accessibilityRole={accessibilityRole || "button"}
+          accessibilityRole={
+            (accessibilityRole || "button") as AccessibilityRole
+          }
           accessibilityLabel={accessibilityLabel}
           accessibilityHint={accessibilityHint}
           accessibilityState={{

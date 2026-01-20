@@ -1,6 +1,9 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { GlassTabBar } from './GlassTabBar';
+import { HomeScreen } from '../screens/Home/HomeScreen';
+import { SearchScreen } from '../screens/Search/SearchScreen';
+import { SettingsScreen } from '../screens/Settings/SettingsScreen';
 import type { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -21,7 +24,7 @@ const MainNavigator: React.FC = () => {
     >
       <Tab.Screen
         name="Home"
-        component={require('../screens/Home/HomeScreen').HomeScreen}
+        component={HomeScreen}
         options={{
           title: 'Home',
           tabBarLabel: 'Home',
@@ -29,7 +32,7 @@ const MainNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Search"
-        component={require('../screens/Search/SearchScreen').SearchScreen}
+        component={SearchScreen}
         options={{
           title: 'Search',
           tabBarLabel: 'Search',
@@ -37,7 +40,7 @@ const MainNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Settings"
-        component={require('../screens/Settings/SettingsScreen').SettingsScreen}
+        component={SettingsScreen}
         options={{
           title: 'Settings',
           tabBarLabel: 'Settings',

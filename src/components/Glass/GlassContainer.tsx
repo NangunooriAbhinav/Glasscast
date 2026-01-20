@@ -119,8 +119,8 @@ export const GlassContainer: React.FC<GlassContainerProps> = ({
       backgroundColor: colors.base.transparent,
 
       // Apply spacing
-      ...(padding && { padding: spacing[padding] }),
-      ...(margin && { margin: spacing[margin] }),
+      ...(padding && { padding: spacing[padding] as number }),
+      ...(margin && { margin: spacing[margin] as number }),
 
       // Apply border
       borderWidth: customBorderWidth ?? borderConfig.borderWidth ?? 0,

@@ -11,6 +11,9 @@ export {
 } from "./colors";
 
 export {
+  glassEffects,
+  animations,
+  lightEffects,
   glassUtilities,
   type GlassMaterial,
   type ShadowType,

@@ -77,12 +77,6 @@ export {
   StaticGlassBackground,
 } from "./GlassBackground";
 
-export {
-  // Switch components
-  GlassSwitch,
-  GlassSwitchWithLabel,
-} from "./GlassSwitch";
-
 // Type exports
 export type { GlassContainerProps } from "./GlassContainer";
 export type { GlassCardProps } from "./GlassCard";

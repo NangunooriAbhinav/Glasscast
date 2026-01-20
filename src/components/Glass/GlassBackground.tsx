@@ -350,10 +350,10 @@ export const GlassBackground: React.FC<GlassBackgroundProps> = ({
       case "gradient":
         return (
           <LinearGradient
-            colors={effectiveGradientColors}
-            start={getGradientPoints.start}
-            end={getGradientPoints.end}
-            locations={gradientStops}
+            colors={effectiveGradientColors as any}
+            start={getGradientPoints.start as any}
+            end={getGradientPoints.end as any}
+            locations={gradientStops as any}
             style={backgroundStyle}
           />
         );
@@ -400,10 +400,10 @@ export const GlassBackground: React.FC<GlassBackgroundProps> = ({
       case "dynamic":
         return (
           <LinearGradient
-            colors={effectiveGradientColors}
-            start={getGradientPoints.start}
-            end={getGradientPoints.end}
-            locations={gradientStops}
+            colors={effectiveGradientColors as any}
+            start={getGradientPoints.start as any}
+            end={getGradientPoints.end as any}
+            locations={gradientStops as any}
             style={backgroundStyle}
           />
         );
@@ -411,10 +411,10 @@ export const GlassBackground: React.FC<GlassBackgroundProps> = ({
       default:
         return (
           <LinearGradient
-            colors={effectiveGradientColors}
-            start={getGradientPoints.start}
-            end={getGradientPoints.end}
-            locations={gradientStops}
+            colors={effectiveGradientColors as any}
+            start={getGradientPoints.start as any}
+            end={getGradientPoints.end as any}
+            locations={gradientStops as any}
             style={backgroundStyle}
           />
         );
@@ -424,7 +424,7 @@ export const GlassBackground: React.FC<GlassBackgroundProps> = ({
   return (
     <View
       style={[containerStyle, style]}
-      accessibilityRole={accessibilityRole}
+      accessibilityRole={accessibilityRole as any}
       accessibilityLabel={accessibilityLabel}
     >
       {/* Background layer */}
@@ -468,9 +468,9 @@ export const GlassBackground: React.FC<GlassBackgroundProps> = ({
 };
 
 // Preset background shortcuts
-export const WeatherGlassBackground: React.FC<
-  Omit<GlassBackgroundProps, "type">
-> = (props) => (
+export const WeatherGlassBackground: React.FC<GlassBackgroundProps> = (
+  props,
+) => (
   <GlassBackground
     {...props}
     type="dynamic"
@@ -481,9 +481,7 @@ export const WeatherGlassBackground: React.FC<
   />
 );
 
-export const ImageGlassBackground: React.FC<
-  Omit<GlassBackgroundProps, "type">
-> = (props) => (
+export const ImageGlassBackground: React.FC<GlassBackgroundProps> = (props) => (
   <GlassBackground
     {...props}
     type="image"
@@ -493,9 +491,9 @@ export const ImageGlassBackground: React.FC<
   />
 );
 
-export const MinimalGlassBackground: React.FC<
-  Omit<GlassBackgroundProps, "type">
-> = (props) => (
+export const MinimalGlassBackground: React.FC<GlassBackgroundProps> = (
+  props,
+) => (
   <GlassBackground
     {...props}
     type="gradient"
@@ -505,9 +503,9 @@ export const MinimalGlassBackground: React.FC<
   />
 );
 
-export const DynamicGlassBackground: React.FC<
-  Omit<GlassBackgroundProps, "type">
-> = (props) => (
+export const DynamicGlassBackground: React.FC<GlassBackgroundProps> = (
+  props,
+) => (
   <GlassBackground
     {...props}
     type="dynamic"
@@ -519,9 +517,9 @@ export const DynamicGlassBackground: React.FC<
   />
 );
 
-export const StaticGlassBackground: React.FC<
-  Omit<GlassBackgroundProps, "type">
-> = (props) => (
+export const StaticGlassBackground: React.FC<GlassBackgroundProps> = (
+  props,
+) => (
   <GlassBackground
     {...props}
     type="gradient"

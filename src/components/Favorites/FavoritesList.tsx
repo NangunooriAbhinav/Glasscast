@@ -13,8 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useWeather } from '../../hooks/useWeather';
-import { GlassContainer } from '../Glass/GlassContainer';
-import { InteractiveGlassCard } from '../Glass/GlassContainer';
+import { GlassContainer, InteractiveGlassCard } from '../Glass';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';

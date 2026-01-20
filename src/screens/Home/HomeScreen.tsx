@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,263 +9,272 @@ import {
   RefreshControl,
   Animated,
   TouchableOpacity,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useWeather } from '../../hooks/useWeather';
-import { useFavorites } from '../../hooks/useFavorites';
-import { GlassContainer } from '../../components/Glass/GlassContainer';
-import { ErrorMessage } from '../../components/ErrorMessage';
-import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { ForecastCard, type ForecastDay } from '../../components/Forecast';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
-import type { MainTabScreenProps } from '../../navigation/types';
-import type { FavoriteCity } from '../../types/database';
+  FlatList,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  WeatherGlassBackground,
+  WeatherGlassCard,
+  InteractiveGlassCard,
+  FloatingGlassCard,
+  GlassContainer,
+  WeatherActionButton,
+  FloatingActionButton,
+  SearchGlassInput,
+} from "../../components/Glass";
+import { ErrorMessage } from "../../components/ErrorMessage";
+import { LoadingSpinner } from "../../components/LoadingSpinner";
+import { useWeather } from "../../hooks/useWeather";
+import { useFavorites } from "../../hooks/useFavorites";
+import {
+  colors,
+  spacing,
+  typography,
+  glassEffects,
+  animations,
+} from "../../theme";
+import { MainTabScreenProps, SelectedLocation } from "../../navigation/types";
+import type { FavoriteCity } from "../../types/database";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-type HomeScreenProps = MainTabScreenProps<'Home'>;
+type HomeScreenProps = MainTabScreenProps<"Home">;
 
-interface SkeletonProps {
-  style?: any;
-}
+// Default location - Mumbai, India
+const DEFAULT_LOCATION: SelectedLocation = {
+  name: "Mumbai",
+  lat: 19.076,
+  lon: 72.8777,
+  country: "India",
+  state: "Maharashtra",
+};
 
-const Skeleton: React.FC<SkeletonProps> = ({ style }) => (
-  <Animated.View style={[styles.skeleton, style]} />
-);
-
-export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const [selectedCity, setSelectedCity] = useState<FavoriteCity | null>(null);
-  const [showCitySelector, setShowCitySelector] = useState(false);
+export const HomeScreen: React.FC<HomeScreenProps> = ({
+  navigation,
+  route,
+}) => {
+  const [selectedLocation, setSelectedLocation] = useState(DEFAULT_LOCATION);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"weather" | "favorites">(
+    "weather",
+  );
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(50));
 
-  const { favorites, loading: favoritesLoading } = useFavorites();
+  // Use real weather hook
   const {
     data: weatherData,
     loading: weatherLoading,
     error: weatherError,
     refetch: refetchWeather,
-  } = useWeather(
-    selectedCity ? selectedCity.lat : null,
-    selectedCity ? selectedCity.lon : null
-  );
+  } = useWeather(selectedLocation.lat, selectedLocation.lon);
 
-  // Animation refs
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
+  // Use favorites hook
+  const {
+    favorites,
+    loading: favoritesLoading,
+    error: favoritesError,
+    addFavorite,
+    removeFavorite,
+    refreshFavorites,
+  } = useFavorites();
 
-  // Mock forecast data - in real app this would come from useForecast hook
-  const mockForecast: ForecastDay[] = [
-    { day: 'Today', high: 75, low: 58, condition: 'Partly Cloudy', icon: '⛅' },
-    { day: 'Wed', high: 78, low: 61, condition: 'Sunny', icon: '☀️' },
-    { day: 'Thu', high: 73, low: 57, condition: 'Cloudy', icon: '☁️' },
-    { day: 'Fri', high: 71, low: 55, condition: 'Rain', icon: '🌧️' },
-    { day: 'Sat', high: 76, low: 59, condition: 'Partly Cloudy', icon: '⛅' },
-  ];
-
-  // Set default city on first load
   useEffect(() => {
-    if (favorites.length > 0 && !selectedCity) {
-      setSelectedCity(favorites[0]);
+    // Handle location change from navigation
+    if (route.params?.selectedLocation) {
+      setSelectedLocation(route.params.selectedLocation);
     }
-  }, [favorites, selectedCity]);
+  }, [route.params?.selectedLocation]);
 
-  // Animate content when weather data loads
   useEffect(() => {
-    if (weatherData && !weatherLoading) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          tension: 20,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [weatherData, weatherLoading, fadeAnim, slideAnim]);
+    // Animate screen entrance
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 20,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refetchWeather();
+    if (activeTab === "weather") {
+      await refetchWeather();
+    } else {
+      await refreshFavorites();
+    }
     setRefreshing(false);
   };
 
-  const handleCitySelect = (city: FavoriteCity) => {
-    setSelectedCity(city);
-    setShowCitySelector(false);
+  const handleFavoritePress = async (favorite: FavoriteCity) => {
+    const newLocation: SelectedLocation = {
+      name: favorite.city_name,
+      lat: favorite.lat,
+      lon: favorite.lon,
+      country: "India", // Most favorites will be Indian cities
+      state: undefined,
+    };
+    setSelectedLocation(newLocation);
+    setActiveTab("weather");
   };
 
-  const renderCitySelector = () => (
-    <View style={styles.citySelector}>
-      <TouchableOpacity
-        style={styles.citySelectorButton}
-        onPress={() => setShowCitySelector(!showCitySelector)}
-      >
-        <Text style={styles.citySelectorText}>
-          {selectedCity ? selectedCity.city_name : 'Select City'}
-        </Text>
-        <Text style={styles.citySelectorArrow}>
-          {showCitySelector ? '↑' : '↓'}
-        </Text>
-      </TouchableOpacity>
+  const handleRemoveFavorite = async (cityId: string) => {
+    await removeFavorite(cityId);
+  };
 
-      {showCitySelector && (
-        <GlassContainer
-          blurIntensity={25}
-          borderRadius={spacing.radius.lg}
-          style={styles.cityDropdown}
-        >
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {favorites.map((city) => (
-              <TouchableOpacity
-                key={city.id}
-                style={[
-                  styles.cityOption,
-                  selectedCity?.id === city.id && styles.cityOptionSelected,
-                ]}
-                onPress={() => handleCitySelect(city)}
-              >
-                <Text style={[
-                  styles.cityOptionText,
-                  selectedCity?.id === city.id && styles.cityOptionTextSelected,
-                ]}>
-                  {city.city_name}
-                </Text>
-                {city.temperature && (
-                  <Text style={styles.cityOptionTemp}>
-                    {city.temperature}°
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </GlassContainer>
-      )}
-    </View>
+  const getWeatherCondition = () => {
+    if (!weatherData) return "clear";
+    const condition = weatherData.weather.condition.toLowerCase();
+    if (condition.includes("sun") || condition.includes("clear"))
+      return "sunny";
+    if (condition.includes("cloud")) return "cloudy";
+    if (condition.includes("rain")) return "rainy";
+    if (condition.includes("storm")) return "stormy";
+    if (condition.includes("snow")) return "snowy";
+    return "clear";
+  };
+
+  const getTimeOfDay = () => {
+    const hour = new Date().getHours();
+    if (hour < 6) return "night";
+    if (hour < 12) return "morning";
+    if (hour < 18) return "afternoon";
+    if (hour < 21) return "evening";
+    return "night";
+  };
+
+  const getWeatherIcon = (condition: string) => {
+    const lowerCondition = condition.toLowerCase();
+    if (lowerCondition.includes("sun") || lowerCondition.includes("clear"))
+      return "☀️";
+    if (lowerCondition.includes("cloud")) return "☁️";
+    if (lowerCondition.includes("rain")) return "🌧️";
+    if (lowerCondition.includes("storm")) return "⛈️";
+    if (lowerCondition.includes("snow")) return "❄️";
+    if (lowerCondition.includes("mist") || lowerCondition.includes("fog"))
+      return "🌫️";
+    return "⛅";
+  };
+
+  const renderLoadingState = () => (
+    <Animated.View
+      style={[
+        styles.loadingContainer,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <LoadingSpinner message="Getting weather data..." size="large" />
+    </Animated.View>
   );
 
-  const renderWeatherContent = () => {
-    if (weatherLoading && !weatherData) {
-      return (
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-        >
-          {renderCitySelector()}
+  const renderErrorState = () => (
+    <Animated.View
+      style={[
+        styles.errorContainer,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <ErrorMessage
+        message={weatherError?.message || "Failed to load weather data"}
+        onRetry={refetchWeather}
+      />
+    </Animated.View>
+  );
 
-          {/* Temperature skeleton */}
-          <View style={styles.mainWeatherContainer}>
-            <Skeleton style={styles.temperatureSkeleton} />
-            <Skeleton style={styles.conditionSkeleton} />
-          </View>
-
-          {/* Details grid skeleton */}
-          <View style={styles.detailsGrid}>
-            {Array.from({ length: 4 }).map((_, index) => (
-              <View key={index} style={styles.detailCard}>
-                <Skeleton style={styles.detailSkeleton} />
-                <Skeleton style={styles.detailValueSkeleton} />
-              </View>
-            ))}
-          </View>
-        </ScrollView>
-      );
-    }
-
-    if (weatherError) {
-      return (
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-        >
-          {renderCitySelector()}
-          <ErrorMessage
-            message="Failed to load weather data"
-            onRetry={refetchWeather}
-            style={styles.errorContainer}
-          />
-        </ScrollView>
-      );
-    }
-
-    if (!weatherData) {
-      return (
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-        >
-          {renderCitySelector()}
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>
-              No weather data available
-            </Text>
-            <Text style={styles.emptyStateSubtext}>
-              Select a city or add favorites to get started
-            </Text>
-          </View>
-        </ScrollView>
-      );
-    }
+  const renderMainWeatherCard = () => {
+    if (!weatherData) return null;
 
     return (
-      <Animated.ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.text.primary}
-            colors={[colors.accent.primary]}
-          />
-        }
+      <Animated.View
+        style={[
+          styles.mainCardContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
       >
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
+        <WeatherGlassCard
+          material="frosted"
+          elevation="high"
+          enableGlow={true}
+          glowColor={colors.accent.primary}
+          enableReflection={true}
+          enableGradientOverlay={true}
+          gradientColors={colors.gradient.primary}
+          borderRadius="3xl"
+          padding="xl"
+          style={styles.mainWeatherCard}
         >
-          {renderCitySelector()}
+          <View style={styles.mainWeatherContent}>
+            {/* Location */}
+            <Text style={styles.locationText}>
+              {selectedLocation.name}
+              {selectedLocation.state && `, ${selectedLocation.state}`}
+              {selectedLocation.country && `, ${selectedLocation.country}`}
+            </Text>
 
-          {/* Main Weather Display */}
-          <GlassContainer
-            blurIntensity={30}
-            borderRadius={spacing.radius['2xl']}
-            style={styles.mainWeatherContainer}
-          >
+            {/* Main temperature and condition */}
             <View style={styles.temperatureContainer}>
-              <Text style={styles.temperature}>
+              <Text style={styles.temperatureText}>
                 {weatherData.temperature.current}°
               </Text>
               <View style={styles.conditionContainer}>
-                <Text style={styles.conditionEmoji}>
-                  {weatherData.weather.condition === 'Clear' ? '☀️' :
-                   weatherData.weather.condition === 'Clouds' ? '☁️' :
-                   weatherData.weather.condition === 'Rain' ? '🌧️' :
-                   weatherData.weather.condition === 'Snow' ? '❄️' : '⛅'}
+                <Text style={styles.weatherIcon}>
+                  {getWeatherIcon(weatherData.weather.condition)}
                 </Text>
-                <Text style={styles.condition}>
+                <Text style={styles.conditionText}>
                   {weatherData.weather.description}
+                </Text>
+                <Text style={styles.feelsLikeText}>
+                  Feels like {weatherData.temperature.feelsLike}°
                 </Text>
               </View>
             </View>
 
-            <View style={styles.locationContainer}>
-              <Text style={styles.location}>
-                {weatherData.location.name}
-              </Text>
+            {/* Weather details grid */}
+            <View style={styles.detailsGrid}>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Humidity</Text>
+                <Text style={styles.detailValue}>
+                  {weatherData.details.humidity}%
+                </Text>
+              </View>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Wind</Text>
+                <Text style={styles.detailValue}>
+                  {Math.round(weatherData.details.windSpeed)} m/s
+                </Text>
+              </View>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Pressure</Text>
+                <Text style={styles.detailValue}>
+                  {weatherData.details.pressure} hPa
+                </Text>
+              </View>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Visibility</Text>
+                <Text style={styles.detailValue}>
+                  {Math.round(weatherData.details.visibility / 1000)} km
+                </Text>
+              </View>
             </View>
 
+            {/* High/Low temperatures */}
             <View style={styles.highLowContainer}>
               <Text style={styles.highLowText}>
                 H: {weatherData.temperature.max}°
@@ -274,211 +283,484 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 L: {weatherData.temperature.min}°
               </Text>
             </View>
-          </GlassContainer>
-
-          {/* Weather Details */}
-          <View style={styles.detailsGrid}>
-            <GlassContainer
-              blurIntensity={20}
-              borderRadius={spacing.radius.lg}
-              style={styles.detailCard}
-            >
-              <Text style={styles.detailLabel}>Feels Like</Text>
-              <Text style={styles.detailValue}>
-                {weatherData.temperature.feelsLike}°
-              </Text>
-            </GlassContainer>
-
-            <GlassContainer
-              blurIntensity={20}
-              borderRadius={spacing.radius.lg}
-              style={styles.detailCard}
-            >
-              <Text style={styles.detailLabel}>Humidity</Text>
-              <Text style={styles.detailValue}>
-                {weatherData.details.humidity}%
-              </Text>
-            </GlassContainer>
-
-            <GlassContainer
-              blurIntensity={20}
-              borderRadius={spacing.radius.lg}
-              style={styles.detailCard}
-            >
-              <Text style={styles.detailLabel}>Wind Speed</Text>
-              <Text style={styles.detailValue}>
-                {weatherData.details.windSpeed} mph
-              </Text>
-            </GlassContainer>
-
-            <GlassContainer
-              blurIntensity={20}
-              borderRadius={spacing.radius.lg}
-              style={styles.detailCard}
-            >
-              <Text style={styles.detailLabel}>Pressure</Text>
-              <Text style={styles.detailValue}>
-                {weatherData.details.pressure} in
-              </Text>
-            </GlassContainer>
           </View>
+        </WeatherGlassCard>
+      </Animated.View>
+    );
+  };
 
-          {/* 5-Day Forecast */}
-          <ForecastCard
-            forecast={mockForecast}
-            onDayPress={(day, index) => {
-              // Handle forecast day press - could navigate to detailed view
-              console.log('Pressed forecast day:', day.day, index);
-            }}
+  const renderLocationSelector = () => (
+    <Animated.View
+      style={[
+        styles.locationSelectorContainer,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <FloatingGlassCard
+        material="medium"
+        elevation="medium"
+        enableHover={true}
+        enablePress={true}
+        pressable={true}
+        onPress={() => navigation.navigate("Search")}
+        borderRadius="2xl"
+        padding="lg"
+        style={styles.locationSelector}
+      >
+        <View style={styles.locationSelectorContent}>
+          <Text style={styles.locationSelectorIcon}>📍</Text>
+          <View style={styles.locationSelectorInfo}>
+            <Text style={styles.locationSelectorTitle}>Current Location</Text>
+            <Text style={styles.locationSelectorSubtitle}>
+              {selectedLocation.name}
+              {selectedLocation.state && `, ${selectedLocation.state}`}
+            </Text>
+          </View>
+          <Text style={styles.locationSelectorChevron}>›</Text>
+        </View>
+      </FloatingGlassCard>
+    </Animated.View>
+  );
+
+  const renderActionCards = () => (
+    <Animated.View
+      style={[
+        styles.actionCardsContainer,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <FloatingGlassCard
+        material="mirror"
+        elevation="floating"
+        enableGlow={true}
+        glowColor={colors.accent.secondary}
+        pressable={true}
+        onPress={() => navigation.navigate("Search")}
+        style={styles.actionCard}
+      >
+        <Text style={styles.actionCardIcon}>🔍</Text>
+        <Text style={styles.actionCardTitle}>Search</Text>
+        <Text style={styles.actionCardSubtitle}>Find locations</Text>
+      </FloatingGlassCard>
+
+      <FloatingGlassCard
+        material="mirror"
+        elevation="floating"
+        enableGlow={true}
+        glowColor={colors.accent.success}
+        pressable={true}
+        onPress={() => navigation.navigate("Settings")}
+        style={styles.actionCard}
+      >
+        <Text style={styles.actionCardIcon}>⚙️</Text>
+        <Text style={styles.actionCardTitle}>Settings</Text>
+        <Text style={styles.actionCardSubtitle}>Preferences</Text>
+      </FloatingGlassCard>
+    </Animated.View>
+  );
+
+  const renderFavoritesContent = () => {
+    if (favoritesLoading) {
+      return (
+        <Animated.View
+          style={[
+            styles.loadingContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <LoadingSpinner message="Loading favorites..." size="large" />
+        </Animated.View>
+      );
+    }
+
+    if (favoritesError) {
+      return (
+        <Animated.View
+          style={[
+            styles.errorContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <ErrorMessage
+            message={favoritesError.message || "Failed to load favorites"}
+            onRetry={refreshFavorites}
           />
         </Animated.View>
-      </Animated.ScrollView>
+      );
+    }
+
+    if (favorites.length === 0) {
+      return (
+        <Animated.View
+          style={[
+            styles.emptyStateContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <GlassContainer
+            material="regular"
+            borderRadius={spacing.radius.xl}
+            padding="xl"
+            style={styles.emptyStateCard}
+          >
+            <Text style={styles.emptyStateIcon}>⭐</Text>
+            <Text style={styles.emptyStateTitle}>No Favorites Yet</Text>
+            <Text style={styles.emptyStateMessage}>
+              Search for cities and add them to your favorites to see quick
+              weather updates here.
+            </Text>
+            <TouchableOpacity
+              style={styles.addFavoriteButton}
+              onPress={() => navigation.navigate("Search")}
+            >
+              <Text style={styles.addFavoriteButtonText}>
+                Add Your First Favorite
+              </Text>
+            </TouchableOpacity>
+          </GlassContainer>
+        </Animated.View>
+      );
+    }
+
+    return (
+      <Animated.View
+        style={[
+          styles.favoritesContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        {favorites.map((favorite, index) => (
+          <InteractiveGlassCard
+            key={favorite.id}
+            material="medium"
+            elevation="medium"
+            enableHover={true}
+            enablePress={true}
+            scaleOnPress={0.98}
+            scaleOnHover={1.02}
+            borderRadius={spacing.radius.xl}
+            padding="lg"
+            margin="sm"
+            style={styles.favoriteCard}
+          >
+            <TouchableOpacity
+              style={styles.favoriteCardContent}
+              onPress={() => handleFavoritePress(favorite)}
+            >
+              <View style={styles.favoriteInfo}>
+                <View style={styles.favoriteHeader}>
+                  <Text style={styles.favoriteTitle}>{favorite.city_name}</Text>
+                  <TouchableOpacity
+                    style={styles.removeFavoriteButton}
+                    onPress={() => handleRemoveFavorite(favorite.id)}
+                  >
+                    <Text style={styles.removeFavoriteIcon}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.favoriteCoordinates}>
+                  {favorite.lat.toFixed(2)}, {favorite.lon.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.favoriteWeatherPreview}>
+                <Text style={styles.favoriteWeatherIcon}>🌤️</Text>
+                <Text style={styles.favoriteActionText}>Tap for weather</Text>
+              </View>
+            </TouchableOpacity>
+          </InteractiveGlassCard>
+        ))}
+      </Animated.View>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <WeatherGlassBackground
+      weatherCondition={getWeatherCondition()}
+      timeOfDay={getTimeOfDay()}
+      enableGlassOverlay={true}
+      enableAmbientLight={true}
+      enableDirectionalLight={true}
+      enableVignette={true}
+      vignetteIntensity={0.2}
+      enableParallax={true}
+      parallaxIntensity={5}
+    >
       <StatusBar
         barStyle="light-content"
         backgroundColor="transparent"
         translucent
       />
 
-      <SafeAreaView style={styles.safeArea}>
-        {renderWeatherContent()}
+      <SafeAreaView style={styles.container}>
+        {/* Search Bar */}
+        <Animated.View
+          style={[
+            styles.searchContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <SearchGlassInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search for a city or location"
+            fullWidth={true}
+            enableFocusScale={true}
+            focusScale={1.02}
+            leftIcon={<Text style={styles.searchIcon}>🔍</Text>}
+            rightIcon={
+              searchQuery ? (
+                <WeatherActionButton
+                  title=""
+                  size="small"
+                  onPress={() => setSearchQuery("")}
+                  icon={<Text style={styles.clearIcon}>×</Text>}
+                />
+              ) : null
+            }
+          />
+        </Animated.View>
+
+        {/* Tab Navigation */}
+        <Animated.View
+          style={[
+            styles.tabContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              activeTab === "weather" && styles.tabButtonActive,
+            ]}
+            onPress={() => setActiveTab("weather")}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "weather" && styles.tabTextActive,
+              ]}
+            >
+              🌤️ Current Weather
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              activeTab === "favorites" && styles.tabButtonActive,
+            ]}
+            onPress={() => setActiveTab("favorites")}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "favorites" && styles.tabTextActive,
+              ]}
+            >
+              ⭐ Favorites ({favorites.length})
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.text.primary}
+              colors={[colors.accent.primary]}
+            />
+          }
+        >
+          {activeTab === "weather" ? (
+            <>
+              {/* Location Selector */}
+              {renderLocationSelector()}
+
+              {/* Weather Content */}
+              {weatherLoading && !weatherData ? (
+                renderLoadingState()
+              ) : weatherError ? (
+                renderErrorState()
+              ) : (
+                <>
+                  {renderMainWeatherCard()}
+                  {renderActionCards()}
+                </>
+              )}
+            </>
+          ) : (
+            renderFavoritesContent()
+          )}
+
+          {/* Bottom spacing */}
+          <View style={{ height: spacing["6xl"] }} />
+        </ScrollView>
+
+        {/* Floating Action Button */}
+        <FloatingActionButton
+          title=""
+          icon={<Text style={styles.fabIcon}>+</Text>}
+          style={styles.fab}
+          onPress={() => navigation.navigate("Search")}
+        />
       </SafeAreaView>
-    </View>
+    </WeatherGlassBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.base.black,
   },
-  safeArea: {
-    flex: 1,
+  searchContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  searchIcon: {
+    fontSize: 16,
+    opacity: 0.7,
+  },
+  clearIcon: {
+    fontSize: 18,
+    color: colors.text.secondary,
   },
   scrollView: {
     flex: 1,
   },
-  content: {
-    flex: 1,
+  locationSelectorContainer: {
     paddingHorizontal: spacing.lg,
-  },
-  citySelector: {
-    marginTop: spacing.md,
-    marginBottom: spacing.xl,
-    zIndex: 1000,
-  },
-  citySelectorButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.glass.primary,
-    borderRadius: spacing.radius.lg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderWidth: 0.5,
-    borderColor: colors.glass.secondary,
-  },
-  citySelectorText: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.text.primary,
-  },
-  citySelectorArrow: {
-    fontSize: typography.size.lg,
-    color: colors.text.secondary,
-  },
-  cityDropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    maxHeight: 200,
-    marginTop: spacing.xs,
-    zIndex: 1000,
-  },
-  cityOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  cityOptionSelected: {
-    backgroundColor: colors.glass.accent,
-  },
-  cityOptionText: {
-    fontSize: typography.size.base,
-    color: colors.text.primary,
-  },
-  cityOptionTextSelected: {
-    fontWeight: typography.weight.semibold,
-  },
-  cityOptionTemp: {
-    fontSize: typography.size.base,
-    color: colors.text.secondary,
-  },
-  mainWeatherContainer: {
-    marginBottom: spacing.xl,
-    padding: spacing.xl,
-    minHeight: 250,
-  },
-  temperatureContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: spacing.lg,
   },
-  temperature: {
-    fontSize: typography.size['6xl'],
-    fontWeight: typography.weight.thin,
-    color: colors.text.primary,
+  locationSelector: {
+    minHeight: 60,
   },
-  conditionContainer: {
-    alignItems: 'center',
+  locationSelectorContent: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  conditionEmoji: {
-    fontSize: 48,
-    marginBottom: spacing.xs,
+  locationSelectorIcon: {
+    fontSize: 24,
+    marginRight: spacing.md,
   },
-  condition: {
-    fontSize: typography.size.lg,
+  locationSelectorInfo: {
+    flex: 1,
+  },
+  locationSelectorTitle: {
+    fontSize: typography.size.sm,
     fontWeight: typography.weight.medium,
     color: colors.text.secondary,
-    textAlign: 'center',
+    marginBottom: spacing.xs,
   },
-  locationContainer: {
-    marginBottom: spacing.md,
+  locationSelectorSubtitle: {
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
+    color: colors.text.primary,
   },
-  location: {
+  locationSelectorChevron: {
+    fontSize: 20,
+    color: colors.text.muted,
+    fontWeight: typography.weight.light,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: spacing["4xl"],
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing["4xl"],
+  },
+  mainCardContainer: {
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  mainWeatherCard: {
+    minHeight: 320,
+  },
+  mainWeatherContent: {
+    flex: 1,
+  },
+  locationText: {
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.medium,
+    color: colors.text.primary,
+    textAlign: "center",
+    marginBottom: spacing.lg,
+  },
+  temperatureContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing["2xl"],
+  },
+  temperatureText: {
+    fontSize: typography.size["6xl"],
+    fontWeight: typography.weight.thin,
+    color: colors.text.primary,
+    marginRight: spacing.lg,
+  },
+  conditionContainer: {
+    alignItems: "center",
+  },
+  weatherIcon: {
+    fontSize: 48,
+    marginBottom: spacing.sm,
+  },
+  conditionText: {
     fontSize: typography.size.xl,
     fontWeight: typography.weight.medium,
     color: colors.text.primary,
-    textAlign: 'center',
+    marginBottom: spacing.xs,
+    textTransform: "capitalize",
+    textAlign: "center",
   },
-  highLowContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.xl,
-  },
-  highLowText: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.medium,
+  feelsLikeText: {
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.normal,
     color: colors.text.secondary,
+    textAlign: "center",
   },
   detailsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: spacing.lg,
   },
-  detailCard: {
-    width: (screenWidth - spacing.lg * 3) / 2,
-    padding: spacing.lg,
+  detailItem: {
+    width: "48%",
+    alignItems: "center",
     marginBottom: spacing.md,
-    alignItems: 'center',
   },
   detailLabel: {
     fontSize: typography.size.sm,
@@ -487,51 +769,177 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   detailValue: {
-    fontSize: typography.size.xl,
+    fontSize: typography.size.lg,
     fontWeight: typography.weight.semibold,
     color: colors.text.primary,
   },
-  errorContainer: {
-    marginTop: spacing.xl,
+  highLowContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: spacing.xl,
   },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  emptyStateText: {
-    fontSize: typography.size.xl,
+  highLowText: {
+    fontSize: typography.size.lg,
     fontWeight: typography.weight.medium,
-    color: colors.text.primary,
-    textAlign: 'center',
+    color: colors.text.secondary,
+  },
+  actionCardsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  actionCard: {
+    width: (screenWidth - spacing.lg * 3) / 2,
+    aspectRatio: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionCardIcon: {
+    fontSize: 32,
     marginBottom: spacing.sm,
   },
-  emptyStateSubtext: {
-    fontSize: typography.size.base,
+  actionCardTitle: {
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  actionCardSubtitle: {
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.normal,
     color: colors.text.secondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
-  skeleton: {
+  fab: {
+    position: "absolute",
+    right: spacing.lg,
+    bottom: spacing["4xl"],
+    width: 56,
+    height: 56,
+  },
+  fabIcon: {
+    fontSize: 24,
+    fontWeight: typography.weight.bold,
+    color: colors.text.primary,
+  },
+  tabContainer: {
+    flexDirection: "row",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: spacing.radius.lg,
     backgroundColor: colors.glass.secondary,
-    borderRadius: spacing.radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: spacing.xs,
   },
-  temperatureSkeleton: {
-    height: 80,
-    width: 120,
+  tabButtonActive: {
+    backgroundColor: colors.glass.accent,
+  },
+  tabText: {
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.medium,
+    color: colors.text.secondary,
+  },
+  tabTextActive: {
+    color: colors.text.primary,
+    fontWeight: typography.weight.semibold,
+  },
+  favoritesContainer: {
+    paddingHorizontal: spacing.lg,
+  },
+  favoriteCard: {
+    marginBottom: spacing.sm,
+  },
+  favoriteCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  favoriteInfo: {
+    flex: 1,
+  },
+  favoriteHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: spacing.xs,
+  },
+  favoriteTitle: {
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
+    color: colors.text.primary,
+  },
+  favoriteCoordinates: {
+    fontSize: typography.size.sm,
+    color: colors.text.secondary,
+  },
+  favoriteWeatherPreview: {
+    alignItems: "center",
+    marginLeft: spacing.md,
+  },
+  favoriteWeatherIcon: {
+    fontSize: 32,
+    marginBottom: spacing.xs,
+  },
+  favoriteActionText: {
+    fontSize: typography.size.xs,
+    color: colors.text.secondary,
+    textAlign: "center",
+  },
+  removeFavoriteButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.glass.tertiary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  removeFavoriteIcon: {
+    fontSize: 16,
+    color: colors.text.secondary,
+  },
+  emptyStateContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+  },
+  emptyStateCard: {
+    alignItems: "center",
+    paddingVertical: spacing["2xl"],
+  },
+  emptyStateIcon: {
+    fontSize: 64,
     marginBottom: spacing.lg,
   },
-  conditionSkeleton: {
-    height: 60,
-    width: 100,
+  emptyStateTitle: {
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.bold,
+    color: colors.text.primary,
+    marginBottom: spacing.md,
+    textAlign: "center",
   },
-  detailSkeleton: {
-    height: 16,
-    width: 60,
-    marginBottom: spacing.sm,
+  emptyStateMessage: {
+    fontSize: typography.size.base,
+    color: colors.text.secondary,
+    textAlign: "center",
+    marginBottom: spacing.xl,
+    lineHeight: 24,
   },
-  detailValueSkeleton: {
-    height: 24,
-    width: 40,
+  addFavoriteButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: spacing.radius.lg,
+    backgroundColor: colors.glass.accent,
+  },
+  addFavoriteButtonText: {
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.semibold,
+    color: colors.text.primary,
   },
 });

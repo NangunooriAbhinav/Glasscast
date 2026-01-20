@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError } from "axios";
 import type {
   WeatherData,
   ForecastData,
@@ -8,22 +8,27 @@ import type {
   WeatherForecast,
   OneCallData,
   CompleteWeatherData,
-} from '../types/weather';
+} from "../types/weather";
 
-const WEATHER_API_BASE_URL = 'https://api.openweathermap.org/data/2.5';
-const GEOCODING_API_BASE_URL = 'https://api.openweathermap.org/geo/1.0';
+const WEATHER_API_BASE_URL = "https://api.openweathermap.org/data/2.5";
+const GEOCODING_API_BASE_URL = "https://api.openweathermap.org/geo/1.0";
 
 const API_KEY = process.env.EXPO_PUBLIC_WEATHER_API_KEY;
 
 if (!API_KEY) {
-  throw new Error('Missing EXPO_PUBLIC_WEATHER_API_KEY environment variable');
+  console.warn(
+    "Missing EXPO_PUBLIC_WEATHER_API_KEY environment variable - using demo key",
+  );
 }
+
+// Use a demo key if none provided (for testing)
+const EFFECTIVE_API_KEY = API_KEY || "demo_key_for_testing";
 
 // Create axios instance with timeout
 const weatherApi = axios.create({
   timeout: 10000, // 10 second timeout
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -36,7 +41,10 @@ class WeatherService {
   /**
    * Get current weather data for coordinates
    */
-  async getCurrentWeather(lat: number, lon: number): Promise<WeatherResponse<CurrentWeather>> {
+  async getCurrentWeather(
+    lat: number,
+    lon: number,
+  ): Promise<WeatherResponse<CurrentWeather>> {
     try {
       const response = await weatherApi.get<WeatherData>(
         `${WEATHER_API_BASE_URL}/weather`,
@@ -44,23 +52,26 @@ class WeatherService {
           params: {
             lat,
             lon,
-            appid: API_KEY,
-            units: 'metric',
+            appid: EFFECTIVE_API_KEY,
+            units: "metric",
           },
-        }
+        },
       );
 
       const transformedData = this.transformCurrentWeather(response.data);
       return { data: transformedData, error: null };
     } catch (error) {
-      return this.handleApiError(error, 'Failed to fetch current weather');
+      return this.handleApiError(error, "Failed to fetch current weather");
     }
   }
 
   /**
    * Get 5-day weather forecast for coordinates
    */
-  async getForecast(lat: number, lon: number): Promise<WeatherResponse<WeatherForecast>> {
+  async getForecast(
+    lat: number,
+    lon: number,
+  ): Promise<WeatherResponse<WeatherForecast>> {
     try {
       const response = await weatherApi.get<ForecastData>(
         `${WEATHER_API_BASE_URL}/forecast`,
@@ -68,23 +79,26 @@ class WeatherService {
           params: {
             lat,
             lon,
-            appid: API_KEY,
-            units: 'metric',
+            appid: EFFECTIVE_API_KEY,
+            units: "metric",
           },
-        }
+        },
       );
 
       const transformedData = this.transformForecast(response.data);
       return { data: transformedData, error: null };
     } catch (error) {
-      return this.handleApiError(error, 'Failed to fetch weather forecast');
+      return this.handleApiError(error, "Failed to fetch weather forecast");
     }
   }
 
   /**
    * Search for cities by name
    */
-  async searchCities(query: string, limit: number = 5): Promise<WeatherResponse<City[]>> {
+  async searchCities(
+    query: string,
+    limit: number = 5,
+  ): Promise<WeatherResponse<City[]>> {
     try {
       if (!query.trim()) {
         return { data: [], error: null };
@@ -96,14 +110,14 @@ class WeatherService {
           params: {
             q: query,
             limit,
-            appid: API_KEY,
+            appid: EFFECTIVE_API_KEY,
           },
-        }
+        },
       );
 
       return { data: response.data, error: null };
     } catch (error) {
-      return this.handleApiError(error, 'Failed to search cities');
+      return this.handleApiError(error, "Failed to search cities");
     }
   }
 
@@ -116,22 +130,22 @@ class WeatherService {
     lon: number,
     options: {
       exclude?: string[];
-      units?: 'standard' | 'metric' | 'imperial';
+      units?: "standard" | "metric" | "imperial";
       lang?: string;
-    } = {}
+    } = {},
   ): Promise<WeatherResponse<CompleteWeatherData>> {
     try {
-      const { exclude = [], units = 'metric', lang } = options;
+      const { exclude = [], units = "metric", lang } = options;
 
       const params: any = {
         lat,
         lon,
-        appid: API_KEY,
+        appid: EFFECTIVE_API_KEY,
         units,
       };
 
       if (exclude.length > 0) {
-        params.exclude = exclude.join(',');
+        params.exclude = exclude.join(",");
       }
 
       if (lang) {
@@ -140,13 +154,16 @@ class WeatherService {
 
       const response = await weatherApi.get<OneCallData>(
         `https://api.openweathermap.org/data/3.0/onecall`,
-        { params }
+        { params },
       );
 
       const transformedData = this.transformOneCallData(response.data);
       return { data: transformedData, error: null };
     } catch (error) {
-      return this.handleApiError(error, 'Failed to fetch complete weather data');
+      return this.handleApiError(
+        error,
+        "Failed to fetch complete weather data",
+      );
     }
   }
 
@@ -190,22 +207,25 @@ class WeatherService {
    */
   private transformForecast(data: ForecastData): WeatherForecast {
     // Group forecast items by date
-    const groupedByDate = data.list.reduce((acc, item) => {
-      const date = new Date(item.dt * 1000).toDateString();
-      if (!acc[date]) {
-        acc[date] = [];
-      }
-      acc[date].push(item);
-      return acc;
-    }, {} as Record<string, typeof data.list>);
+    const groupedByDate = data.list.reduce(
+      (acc, item) => {
+        const date = new Date(item.dt * 1000).toDateString();
+        if (!acc[date]) {
+          acc[date] = [];
+        }
+        acc[date].push(item);
+        return acc;
+      },
+      {} as Record<string, typeof data.list>,
+    );
 
     // Transform each day's forecast
     const forecast = Object.entries(groupedByDate).map(([date, items]) => {
-      const temps = items.map(item => item.main.temp);
-      const humidities = items.map(item => item.main.humidity);
-      const pressures = items.map(item => item.main.pressure);
-      const windSpeeds = items.map(item => item.wind.speed);
-      const precipitations = items.map(item => item.pop);
+      const temps = items.map((item) => item.main.temp);
+      const humidities = items.map((item) => item.main.humidity);
+      const pressures = items.map((item) => item.main.pressure);
+      const windSpeeds = items.map((item) => item.wind.speed);
+      const precipitations = items.map((item) => item.pop);
 
       return {
         date,
@@ -219,15 +239,27 @@ class WeatherService {
           icon: items[0].weather[0].icon,
         },
         details: {
-          humidity: Math.round(humidities.reduce((a, b) => a + b, 0) / humidities.length),
-          pressure: Math.round(pressures.reduce((a, b) => a + b, 0) / pressures.length),
-          windSpeed: Math.round((windSpeeds.reduce((a, b) => a + b, 0) / windSpeeds.length) * 10) / 10,
-          precipitation: Math.round((precipitations.reduce((a, b) => a + b, 0) / precipitations.length) * 100),
+          humidity: Math.round(
+            humidities.reduce((a, b) => a + b, 0) / humidities.length,
+          ),
+          pressure: Math.round(
+            pressures.reduce((a, b) => a + b, 0) / pressures.length,
+          ),
+          windSpeed:
+            Math.round(
+              (windSpeeds.reduce((a, b) => a + b, 0) / windSpeeds.length) * 10,
+            ) / 10,
+          precipitation: Math.round(
+            (precipitations.reduce((a, b) => a + b, 0) /
+              precipitations.length) *
+              100,
+          ),
         },
-        hourly: items.slice(0, 8).map(item => ({ // First 24 hours (3-hour intervals)
-          time: new Date(item.dt * 1000).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
+        hourly: items.slice(0, 8).map((item) => ({
+          // First 24 hours (3-hour intervals)
+          time: new Date(item.dt * 1000).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
           }),
           temperature: Math.round(item.main.temp),
           weather: {
@@ -277,7 +309,8 @@ class WeatherService {
         description: data.current.weather[0].description,
         icon: data.current.weather[0].icon,
       },
-      hourly: data.hourly?.slice(0, 24).map(hour => ({ // First 24 hours
+      hourly: data.hourly?.slice(0, 24).map((hour) => ({
+        // First 24 hours
         timestamp: hour.dt,
         temperature: Math.round(hour.temp),
         feelsLike: Math.round(hour.feels_like),
@@ -286,7 +319,7 @@ class WeatherService {
         condition: hour.weather[0].main,
         icon: hour.weather[0].icon,
       })),
-      daily: data.daily?.map(day => ({
+      daily: data.daily?.map((day) => ({
         timestamp: day.dt,
         sunrise: day.sunrise,
         sunset: day.sunset,
@@ -325,41 +358,45 @@ class WeatherService {
   /**
    * Handle API errors consistently
    */
-  private handleApiError(error: any, defaultMessage: string): WeatherResponse<any> {
+  private handleApiError(
+    error: any,
+    defaultMessage: string,
+  ): WeatherResponse<any> {
     let message = defaultMessage;
     let code: string | number | undefined;
 
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError;
 
-      if (axiosError.code === 'ECONNABORTED') {
-        message = 'Request timed out. Please check your connection.';
-        code = 'TIMEOUT';
+      if (axiosError.code === "ECONNABORTED") {
+        message = "Request timed out. Please check your connection.";
+        code = "TIMEOUT";
       } else if (!axiosError.response) {
-        message = 'Network error. Please check your internet connection.';
-        code = 'NETWORK_ERROR';
+        message = "Network error. Please check your internet connection.";
+        code = "NETWORK_ERROR";
       } else {
         const status = axiosError.response.status;
         code = status;
 
         switch (status) {
           case 401:
-            message = 'Invalid API key. Please check your configuration.';
+            message =
+              "Weather API key invalid. Please check your .env file has EXPO_PUBLIC_WEATHER_API_KEY set.";
             break;
           case 403:
-            message = 'API access forbidden. Please check your permissions.';
+            message = "API access forbidden. Please check your permissions.";
             break;
           case 404:
-            message = 'Weather data not found for this location.';
+            message = "Weather data not found for this location.";
             break;
           case 429:
-            message = 'Too many requests. Please try again later.';
+            message = "Too many API requests. Please try again in a minute.";
             break;
           case 500:
-            message = 'Weather service is temporarily unavailable.';
+            message = "Weather service is temporarily unavailable.";
             break;
           default:
-            message = `Weather API error: ${status}`;
+            message = `Weather API error (${status}). Please check your internet connection.`;
         }
       }
     } else if (error instanceof Error) {

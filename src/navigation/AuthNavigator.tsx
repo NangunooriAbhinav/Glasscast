@@ -1,5 +1,7 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import { LoginScreen } from '../screens/Auth/LoginScreen';
+import { SignupScreen } from '../screens/Auth/SignupScreen';
 import type { AuthStackParamList } from './types';
 
 const Stack = createStackNavigator<AuthStackParamList>();
@@ -15,14 +17,14 @@ const AuthNavigator: React.FC = () => {
     >
       <Stack.Screen
         name="Login"
-        component={require('../screens/Auth/LoginScreen').LoginScreen}
+        component={LoginScreen}
         options={{
           title: 'Login',
         }}
       />
       <Stack.Screen
         name="Signup"
-        component={require('../screens/Auth/SignupScreen').SignupScreen}
+        component={SignupScreen}
         options={{
           title: 'Sign Up',
         }}
