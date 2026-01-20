@@ -21,7 +21,7 @@ const MainNavigator: React.FC = () => {
     >
       <Tab.Screen
         name="Home"
-        getComponent={() => require('../screens/HomeScreen').HomeScreen}
+        component={require('../screens/Home/HomeScreen').HomeScreen}
         options={{
           title: 'Home',
           tabBarLabel: 'Home',
@@ -29,7 +29,7 @@ const MainNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Search"
-        getComponent={() => require('../screens/SearchScreen').SearchScreen}
+        component={require('../screens/Search/SearchScreen').SearchScreen}
         options={{
           title: 'Search',
           tabBarLabel: 'Search',
@@ -37,7 +37,7 @@ const MainNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Settings"
-        getComponent={() => require('../screens/SettingsScreen').SettingsScreen}
+        component={require('../screens/Settings/SettingsScreen').SettingsScreen}
         options={{
           title: 'Settings',
           tabBarLabel: 'Settings',
